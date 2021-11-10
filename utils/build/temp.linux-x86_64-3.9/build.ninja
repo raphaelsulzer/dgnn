@@ -1,0 +1,20 @@
+ninja_required_version = 1.3
+cxx = c++
+
+cflags = -pthread -B /home/raphael/miniconda3/envs/dgnn/compiler_compat -Wno-unused-result -Wsign-compare -DNDEBUG -O2 -Wall -fPIC -O2 -isystem /home/raphael/miniconda3/envs/dgnn/include -I/home/raphael/miniconda3/envs/dgnn/include -fPIC -O2 -isystem /home/raphael/miniconda3/envs/dgnn/include -fPIC -I/home/raphael/miniconda3/envs/dgnn/lib/python3.9/site-packages/numpy/core/include -I/home/raphael/miniconda3/envs/dgnn/include/python3.9 -c
+post_cflags = -DTORCH_API_INCLUDE_EXTENSION_H '-DPYBIND11_COMPILER_TYPE="_gcc"' '-DPYBIND11_STDLIB="_libstdcpp"' '-DPYBIND11_BUILD_ABI="_cxxabi1011"' -DTORCH_EXTENSION_NAME=triangle_hash -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++14
+ldflags = 
+
+rule compile
+  command = $cxx -MMD -MF $out.d $cflags -c $in -o $out $post_cflags
+  depfile = $out.d
+  deps = gcc
+
+
+
+build /home/raphael/remote_python/dgnn/utils/build/temp.linux-x86_64-3.9/libmesh/triangle_hash.o: compile /home/raphael/remote_python/dgnn/utils/libmesh/triangle_hash.cpp
+
+
+
+
+

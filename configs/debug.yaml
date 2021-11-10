@@ -39,13 +39,15 @@ inference:
   batch_size: 0   # also for validation
   per_layer: 1    # also for validation
   has_label: 1
+  graph_cut: true
+  fix_orientation: true
 validation:
   dataset: modelnet
   classes: null
-  shapes_per_conf_per_class: 3
+  shapes_per_conf_per_class: 2
   scan_confs:
     - 4
-  val_every: 2
+  val_every: 5
 training:
   dataset: modelnet
   classes: null
