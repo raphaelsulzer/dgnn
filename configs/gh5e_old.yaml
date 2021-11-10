@@ -1,0 +1,72 @@
+features:
+  scaling: n
+  normalization_range:
+    - 0
+    - 1
+  features:
+    - shape
+    - min
+    - sum
+    - count
+    - first
+    - second  # important feature, only with "first" results are much worse
+#    - last # useless feature for object level training, because there are no camera containing tetrahedra
+  full_inside: 1
+  normalization_feature: vol
+  keep_normalization_feature: 1
+graph:
+  num_hops: 4 # outer hops (unsupervised)
+  additional_num_hops: 3 # inner hops (supervised)
+  clique_sizes: # -1 meaning sample all existing nodes
+    - -1
+inference:
+  batch_size: 256
+  epoch: 40
+  dataset: reconbench
+  files:
+    - anchor
+  scan_confs:
+    - 0
+testing:
+  files:
+    - /home/raphael/data/reconbench/gt/dc_0_lrtcs_0
+    - /home/raphael/data/reconbench/gt/dc_1_lrtcs_0
+    - /home/raphael/data/reconbench/gt/dc_2_lrtcs_0
+    - /home/raphael/data/reconbench/gt/dc_3_lrtcs_0
+    - /home/raphael/data/reconbench/gt/dc_4_lrtcs_0
+  batch_size: 512 # this value is used for inference, shouldn't be
+training:
+  dataset: shapenet
+  data_percentage: 0.40
+  shapes_per_conf_per_class: 2
+  scan_confs:
+    - -1
+  files:
+    - all
+  batch_size: 512
+  epochs: 40
+  loss: kl
+  model_name: sage+
+  model_params:
+    - 128
+    - 256
+    - 512
+    - 1024
+time:
+  start: ""
+  end: ""
+paths:
+  cpp: /home/raphael/cpp
+  models_dir: /home/raphael/cpp/surfaceReconstruction/python/models/
+  omvs: /openMVS/
+  sure: /surfaceReconstruction/build/release
+regularization:
+  angle: 0.0
+  area: 0.0
+  cc: 0.0
+  reg_epoch: 9.9
+  shape_weight_batch_normalization: 1
+  shape_weight_normalization: 1
+  inside_outside_weight:
+    - 1.0
+    - 1.0
