@@ -27,7 +27,7 @@ features:
   edge_normalization_feature: null
 graph:
   num_hops: 4 # outer hops (unsupervised) == num_layers
-  additional_num_hops: 0 # inner hops (supervised), this is there for having a supervised connected component, if set to 0, only the last layer of num_hops is supervised in the form of unconnected nodes
+  additional_num_hops: 1 # inner hops (supervised), this is there for having a supervised connected component, if set to 0, only the last layer of num_hops is supervised in the form of unconnected nodes
   clique_sizes: # -1 meaning sample all existing nodes
     - -1
   self_loops: 0
@@ -45,9 +45,11 @@ inference:
   fix_orientation: true
 validation:
   dataset: modelnet
-  shapes_per_conf_per_class: 5
+  shapes_per_conf_per_class: 10
   scan_confs:
     - 4
+  batch_size: 0   # also for validation
+  per_layer: 1    # also for validation
   val_every: 5
 training:
   dataset: modelnet
@@ -62,6 +64,7 @@ training:
   epochs: 100
   loss: kl
   export_every: 10
+  load_epoch: 0
 retraining:
   load_epoch: 5
   additional_epochs: 4
@@ -69,10 +72,10 @@ model:
   type: sage
   encoder: null
   convs: # specify the OUT channels of sage convs
-    - 64
     - 128
     - 256
     - 512
+    - 1024
   edge_convs: 1
   decoder: 2
   concatenate: 0 # whether to concatenate (or add) target to source node embedding
@@ -83,16 +86,13 @@ time:
   end: ""
 paths:
   data: /mnt/raphael/ModelNet10/
-  out_dir: /mnt/raphael/ModelNet10_out/dgnn/scan4/
+  out_dir: /mnt/raphael/ModelNet10_out/dgnn/scan4_reg/
 regularization:
   cell_reg_type: vol
-  reg_weight: 0.25
+  reg_weight: 0.4
   reg_type: null
-  reg_epoch: null
+  reg_epoch: 50
   shape_weight_batch_normalization: 1
   inside_outside_weight:
     - 1.0
     - 1.0
-results:
-  iou: 0
-  OA_train: 0

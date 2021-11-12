@@ -7,12 +7,10 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 from tqdm import tqdm
-from munch import Munch
-import torchnet as tnt
 import subprocess as sp
-import datetime
 
-import trimesh
+import pprint
+
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'generation'))
 import generate_mesh as gm
@@ -66,17 +64,17 @@ class Metrics():
         return self.OA_sum*100/self.samples_sum
 
     def addCellLossItem(self,cell,weight):
-        self.cell_sum+=cell
-        self.weight_sum+=weight
+        self.cell_sum+=cell.item()
+        self.weight_sum+=weight.item()
     def getCellLoss(self):
-        return (self.cell_sum/self.weight_sum).item() # it's a tensor, so just return the value
+        return self.cell_sum/self.weight_sum # it's a tensor, so just return the value
 
     def addRegLossItem(self,reg,n):
-        self.reg_sum+=reg
+        self.reg_sum+=reg.item()
         self.edges_sum+=n
     def getRegLoss(self):
         if(self.reg_sum > 0.0 and self.edges_sum > 0.0):
-            return (self.reg_sum/self.edges_sum).item() # it's a tensor, so just return the value
+            return (self.reg_sum/self.edges_sum) # it's a tensor, so just return the value
         else:
             return 0
 
@@ -108,9 +106,14 @@ def calcRegularization(model, logits_cell, data_all, clf):
 
     # this current implementation is done for additional_hops = 2
     # it should already work with additional_hops = 1, with
-    inner_prediction = F.log_softmax(logits_cell[:data_all.adjs[model.num_layers].size[0]], dim=-1)
-    surface_triangle_prob_kl = torch.abs(inner_prediction[data_all.adjs[model.num_layers].edge_index[0, :]][:, 0] \
-                                         - inner_prediction[data_all.adjs[model.num_layers].edge_index[1, :]][:, 0])
+    if(data_all.adjs):
+        inner_prediction = F.log_softmax(logits_cell[:data_all.adjs[model.num_layers].size[0]], dim=-1)
+        surface_triangle_probability_kl = torch.abs(inner_prediction[data_all.adjs[model.num_layers].edge_index[0, :]][:, 0] \
+                                             - inner_prediction[data_all.adjs[model.num_layers].edge_index[1, :]][:, 0])
+    else:
+        inner_prediction = F.log_softmax(logits_cell, dim=-1)
+        surface_triangle_probability_kl = torch.abs(inner_prediction[data_all.edge_index[0, :]][:, 0] \
+                                             - inner_prediction[data_all.edge_index[1, :]][:, 0])
 
 
     ## for their source and target nodes
@@ -125,15 +128,22 @@ def calcRegularization(model, logits_cell, data_all, clf):
     #                                      - inner_prediction[data_all.adjs[model.num_layers + 1].edge_index[1, :]][:, 0])
 
     # surface_area = data_all.edge_attr[data_all.adjs[model.num_layers + 1].e_id].squeeze()[:, 0].to(clf.temp.device)
-    weight = data_all.edge_attr[data_all.adjs[model.num_layers].e_id].squeeze()[:, 0].to(clf.temp.device)
+
+    # if(clf.regularization.reg_type):
+    #     weight = data_all.edge_attr[data_all.adjs[model.num_layers].e_id].squeeze()[:, 0].to(clf.temp.device)
+    # else:
+    #     weight =
+
     # area_loss = torch.mean(surface_triangle_prob_kl * surface_area) * clf.regularization.area
     # angle_loss = torch.mean(surface_triangle_prob_kl * angle) * clf.regularization.angle
 
-    reg_loss = surface_triangle_prob_kl * weight * clf.regularization.reg_weight
+    # reg_loss = surface_triangle_prob_kl * weight * clf.regularization.reg_weight
 
-    reg_loss = reg_loss.sum() / weight.sum()
+    reg_loss = surface_triangle_probability_kl * clf.regularization.reg_weight
+    # reg_loss = reg_loss.sum() / weight.sum()
+    reg_loss = reg_loss.sum()
 
-    clf.temp.metrics.addRegLossItem(reg_loss, surface_triangle_prob_kl.size()[0])
+    clf.temp.metrics.addRegLossItem(reg_loss, surface_triangle_probability_kl.size()[0])
 
     return reg_loss
 
@@ -288,7 +298,7 @@ def train_test(model, data, clf):
     EXPORTCOLOR = '\033[1;0;42m'
     NORMALCOLOR = '\033[0m'
 
-    epoch_iou = []
+    row = dict.fromkeys(list(clf.results_df.columns))
 
     for current_epoch in range(clf.temp.start_epoch,clf.training.epochs+1):
         # adjust learning rate to current epoch
@@ -296,19 +306,22 @@ def train_test(model, data, clf):
         adjust_learning_rate(optimizer, clf)
         # train one epoch
         train(model, data.train, data.sampler.train, optimizer, clf)
-        print('Epoch %3d -> Train OA cell: %3.2f%%,  Train Loss (cell): %1.4f,  Train Loss (reg): %1.4f\n'
+        print('Epoch %3d -> Train Loss (cell): %1.4f,  Train Loss (reg): %1.4f, Train OA: %3.2f%%\n'
             % (current_epoch,
-               clf.temp.metrics.getOA(),
-            clf.temp.metrics.getCellLoss(),
-               clf.temp.metrics.getRegLoss()))
-        # this is for saving the train loss of the last epoch
-        clf.results.loss_train = clf.temp.metrics.getCellLoss()
+                clf.temp.metrics.getCellLoss(),
+                clf.temp.metrics.getRegLoss(),
+                clf.temp.metrics.getOA()))
+
+        row['epoch'] = current_epoch
+        row['train_loss'] = clf.temp.metrics.getCellLoss()
+        row['train_loss_reg'] = clf.temp.metrics.getRegLoss()
+        row['train_OA'] = clf.temp.metrics.getOA()
 
         # do testing (ie inference in my case), if this is a test epoch
         if current_epoch % clf.validation.val_every == 0:
 
             OA = 0;loss = 0;samples = 0;weight = 0;reg = 0;edges = 0; iou = 0;
-            for i,d in tqdm(enumerate(data.validation), ncols=50):
+            for i,d in enumerate(tqdm(data.validation, ncols=50)):
                 prediction = inference(model,d,[],clf)
                 temp=gm.generate(d, prediction, clf)
                 iou+=temp[1]
@@ -320,28 +333,24 @@ def train_test(model, data, clf):
                 loss+= clf.temp.metrics.cell_sum; weight+=clf.temp.metrics.weight_sum
                 reg+= clf.temp.metrics.reg_sum; edges+=clf.temp.metrics.edges_sum
 
-            if(reg>0.0 and edges>0.0):
-                re = reg/edges
-            else:
-                re = 0.0
+            re = reg/edges if (reg>0.0 and edges>0.0) else float("nan")
 
             iou = iou*100/len(data.validation)
-            if(iou > clf.results.iou):
-                clf.results.iou = iou
+            if(iou > clf.best_iou):
+                clf.best_iou = iou
                 model_path = os.path.join(clf.paths.out_dir,"model_best.ptm")
                 torch.save(model.state_dict(), model_path)
 
+            ## save everything in the dataframe
+            row['test_loss'] = loss/weight
+            row['test_loss_reg'] = re
+            row['test_OA'] = OA*100/samples
+            row['test_iou'] = iou
+            row['test_best_iou'] = clf.best_iou
 
-            epoch_iou.append((current_epoch*len(data.sampler.train),iou))
-
-            print('Epoch %3d -> Mean OA cell: %3.2f%%, Mean IoU: %3.2f%%, Best Mean IoU: %3.2f%%, Test Loss (cell): %1.4f,   Test Loss (reg): %1.4f' % (
-                    current_epoch,
-                    OA*100/samples,
-                    iou,
-                    clf.results.iou,
-                    loss/weight,
-                    re
-                    ))
+            pprint.pprint(row)
+            # clf.results_df = clf.results_df.append(row,ignore_index=True)
+            clf.results_df.to_csv(clf.files.results,index=False)
 
 
         # save model every 10 epochs
@@ -407,6 +416,7 @@ def train_test(model, data, clf):
 def inference(model, data_all, subgraph_loader, clf):
 
     logits_edge = None
+    data_all.adjs = 0
     model.eval()  # batchnorms in eval mode
     with torch.no_grad():
         if(clf.inference.per_layer and clf.temp.batch_size):
@@ -432,8 +442,8 @@ def inference(model, data_all, subgraph_loader, clf):
         data_all.gt_batch = data_all.y
 
         calcLossAndOA(model, logits_cell, logits_edge, data_all, clf)
-        clf.results.loss_test = clf.temp.metrics.getCellLoss()
-        clf.results.OA_test = clf.temp.metrics.getOA()
+        # clf.results.loss_test = clf.temp.metrics.getCellLoss()
+        # clf.results.OA_test = clf.temp.metrics.getOA()
 
         # clf.results.loss_test = clf.temp.metrics.loss.cell.value()[0]
         # clf.results.OA_test = clf.temp.metrics.OA * 100 / clf.temp.metrics.n_samples
