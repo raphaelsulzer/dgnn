@@ -164,9 +164,13 @@ def generate(data, prediction, clf):
     gt_occ = np.unpackbits(gt_occ)[:points.shape[0]]
     gt_occ = gt_occ.astype(np.float32)
 
-    recon_occ = check_mesh_contains(recon_mesh,points)
+    try:
+        recon_occ = check_mesh_contains(recon_mesh,points)
+        iou = compute_iou(gt_occ, recon_occ)
+    except:
+        iou = float("nan")
 
-    iou = compute_iou(gt_occ,recon_occ)
+
 
     return recon_mesh,iou
 

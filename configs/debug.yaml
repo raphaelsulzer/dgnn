@@ -34,6 +34,7 @@ graph:
 inference:
   dataset: modelnet
   classes: null
+  files: null
   scan_confs:
     - 4
   model: best
@@ -63,8 +64,10 @@ training:
   batch_size: 128
   epochs: 15
   loss: kl
-  export_every: 10
+  learning_rate: 0.005
+  adjust_lr_every: 16
   load_epoch: 0
+  export_every: 10
 model:
   type: sage
   encoder: null

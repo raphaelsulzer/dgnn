@@ -49,7 +49,16 @@ def getDataset(clf):
         if 'x' in classes: classes.remove('x')
         clf.training.files = []
         clf.validation.files = []
-        clf.inference.files = []
+
+        temp = []
+        if(clf.inference.files is not None):
+            for f in clf.inference.files:
+                t = f.split('_')
+                temp.append({"category":t[0],"id":t[1]})
+            clf.inference.files = temp
+            return
+        else:
+            clf.inference.files = []
 
         for c in classes:
 
@@ -70,7 +79,8 @@ def getDataset(clf):
                         d = {"category":n[0],"id":n[1]}
                         clf.validation.files.append(d)
             elif(clf.temp.mode == "inference"):
-                models = os.listdir(os.path.join(clf.paths.data,c,"test"))
+                models = os.listdir(os.path.join(clf.paths.data,c,"train"))
+                models = models[:clf.inference.shapes_per_conf_per_class]
                 for m in models:
                     if os.path.isfile(os.path.join(clf.paths.data,c,"2_watertight",m)):
                         n = re.split(r'[_.]+',m)

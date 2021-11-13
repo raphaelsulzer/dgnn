@@ -30,7 +30,6 @@ class dataLoader:
         self.clf = clf
         self.verbosity = verbosity
 
-
         self.read_edge_features = clf.model.edge_convs
 
     def __len__(self):
@@ -360,10 +359,3 @@ class dataLoader:
                  logits=prediction.numpy(),
                  softmax=prediction.softmax(dim=-1).numpy())
         f.close()
-
-
-
-    def exportModel(self, trained_model):
-
-        print("Export model to: "+self.clf.paths.out_dir)
-        torch.save(trained_model.state_dict(), self.clf.paths.out_dir + "{}.ptm".format(self.clf.temp.args.conf))

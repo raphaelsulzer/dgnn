@@ -2,8 +2,6 @@ import sys, os, argparse, datetime, copy
 from shutil import copyfile
 import pandas as pd
 
-import numpy as np
-
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'learning'))
 import surfaceNetEdgePrediction as epsage
 import surfaceNetStaticEdgeFilters as efsage
@@ -25,29 +23,25 @@ from torch_geometric.utils import add_self_loops
 import warnings
 warnings.filterwarnings('ignore') # to supress the CUDA titan black X warning
 
-import yaml
-
 def training(clf):
 
     print("\n######## TRAINING MODEL ########")
 
-    clf.temp.lr = 5e-3  # adjust learning rate to lr
-    clf.temp.lr_sd = 8  # adjust learning rate for lr every lr_sd epochs
-    clf.temp.start_epoch = 1
-    clf.temp.reg_epoch = clf.regularization.reg_epoch
-
     #############################
     ###### load train data ######
     #############################
-    all_graphs = []; num_nodes = 0
+    all_graphs = [];
     my_loader = io.dataLoader(clf)
 
     print("Load {} graph(s) for training:".format(len(clf.training.files)))
     for graph in tqdm(clf.training.files, ncols=50):
         # print("\t-",graph.split("/")[-1])
-        my_loader.run(graph)
-        all_graphs.append(Data(x=my_loader.features, y=my_loader.gt,
-                 edge_index=my_loader.edge_lists, edge_attr=my_loader.edge_features, pos=None))
+        try:
+            my_loader.run(graph)
+            all_graphs.append(Data(x=my_loader.features, y=my_loader.gt,
+                     edge_index=my_loader.edge_lists, edge_attr=my_loader.edge_features, pos=None))
+        except:
+            print("WARNING: Couldn't load object ",graph)
 
 
     print("\nLoaded graphs:")
@@ -113,7 +107,7 @@ def training(clf):
             sys.exit(1)
         model.load_state_dict(load(model_file))
 
-    # start training
+    ### start training
     if(clf.regularization.reg_epoch):
         print("\nApply regularization starting from epoch {}, with weight {}".format(clf.regularization.reg_epoch,clf.regularization.reg_weight))
     print("\nTrain for {} epochs with {} on gpu {}:\n".format(clf.training.epochs, clf.training.loss, clf.temp.args.gpu))
@@ -126,9 +120,8 @@ def inference(clf):
 
     clf.temp.device = "cuda:" + str(clf.temp.args.gpu)
     clf.temp.print_cm = True
-    # clf.temp.current_epoch = clf.inference.epoch # needed for the loss calculation
     clf.temp.batch_size = clf.inference.batch_size
-    clf.temp.reg_epoch = None
+    clf.regularization.reg_epoch = None
     if(clf.inference.per_layer):
         clf.temp.clique_size = clf.graph.clique_sizes
     else:
@@ -141,7 +134,7 @@ def inference(clf):
     ##############################
     ######### load model #########
     ##############################
-    model_file = os.path.join(clf.paths.out_dir,"model_"+clf.inference.model+".ptm")
+    model_file = os.path.join(clf.paths.out_dir,"model_"+str(clf.inference.model)+".ptm")
     print("\nLOAD MODEL {}\n".format(model_file))
     model = createModel(clf)
     model.to(clf.temp.device)
@@ -151,10 +144,9 @@ def inference(clf):
     model.load_state_dict(load(model_file))
     print("\nTurn of regularization for inference")
 
-    iou_all = 0
-    count = 0
-    # for clf.temp.inference_file in tqdm(clf.inference.files, ncols=50):
-    for clf.temp.inference_file in clf.inference.files:
+    iou_all = 0; count = 0; loss = 0; weight = 0
+    for clf.temp.inference_file in tqdm(clf.inference.files, ncols=50):
+    # for clf.temp.inference_file in clf.inference.files:
 
         ###############################
         ########## load data ##########
@@ -168,18 +160,21 @@ def inference(clf):
 
 
         prediction = rm.inference(model, data, subgraph_sampler, clf)
-        my_loader.exportScore(prediction)
+        # my_loader.exportScore(prediction)
 
         mesh, iou = gm.generate(data, prediction, clf)
-        print("Mesh {} : IoU {}".format(data["category"]+"_"+data["id"],iou))
+        # print("Mesh {} : IoU {}".format(data["category"]+"_"+data["id"],iou))
         iou_all += iou
         count += 1
+        loss += clf.temp.metrics.cell_sum
+        weight += clf.temp.metrics.weight_sum
         # export one shape per class
         mesh.export(os.path.join(clf.paths.out_dir, "generation", data["category"] + "_" + data['id'] + ".ply"))
 
 
 
     print("Mean IoU: ", iou_all/count)
+    print("Mean Loss (cell): ", loss/weight)
     clf.time.end = str(datetime.datetime.now())
 
 
@@ -188,15 +183,6 @@ def inference(clf):
 def prepareSample(clf, file):
     """this function only supports loading one sampler per graph (as used for testing and inference)
     but not yet loading one sampler for multiple graphs (as used in training)"""
-
-    # filename = file.split('_')
-    # if(filename[-2] == 'lrtcs'):
-    #     clf.temp.with_label = True
-    # elif(filename[-2] == 'lrt'):
-    #     clf.temp.with_label = False
-    # else:
-    #     print('not sure if this file has labels or not. set the clf.with_label parameter!')
-    #     sys.exit(1)
 
     verbosity=0
     if(verbosity):
@@ -215,7 +201,7 @@ def prepareSample(clf, file):
     start = datetime.datetime.now()
     if(clf.temp.batch_size):
         batch_loader = NeighborSampler(edge_index=torch_dataset.edge_index, sizes=clf.temp.clique_size,
-                                       batch_size=clf.temp.batch_size, shuffle=False, drop_last=False, return_e_id=clf.model.edge_convs)
+                                       batch_size=clf.temp.batch_size, shuffle=True, drop_last=False, return_e_id=clf.model.edge_convs)
     else:
         batch_loader = []
     stop = datetime.datetime.now()
@@ -278,18 +264,15 @@ if __name__ == "__main__":
 
 
     ################# create the model dir #################
-    if(not os.path.exists(os.path.join(clf.paths.out_dir,"prediction"))):
-        os.makedirs(os.path.join(clf.paths.out_dir,"prediction"))
     if(not os.path.exists(os.path.join(clf.paths.out_dir,"generation"))):
         os.makedirs(os.path.join(clf.paths.out_dir,"generation"))
     # save conf file to out_dir
     clf.files.config = os.path.join(clf.paths.out_dir,"config.yaml")
-    clf.files.results = os.path.join(clf.paths.out_dir,"reults.csv")
+    clf.files.results = os.path.join(clf.paths.out_dir,"results.csv")
     if(not os.path.isfile(clf.files.config)):
         copyfile(args.conf,clf.files.config)
     # create the results df
     clf.results_df = pd.DataFrame(columns=['epoch', 'train_loss', 'train_loss_reg', 'train_OA', 'test_loss', 'test_loss_reg', 'test_OA', 'test_iou', 'test_best_iou'])
-    clf.results_df.to_csv(clf.files.results)
     clf.best_iou = 0
 
 
@@ -300,6 +283,7 @@ if __name__ == "__main__":
     print(clf.temp.start)
     clf.time.start = str(clf.temp.start)
     print("READ CONFIG FROM ", args.conf)
+    print("SAVE CONFIG TO ", clf.files.config)
 
     ############ TRAINING #############
     clf.temp.mode = "training"

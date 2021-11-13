@@ -2,6 +2,7 @@ import sys, os
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
+from shutil import copyfile
 
 import numpy as np
 from sklearn.metrics import confusion_matrix
@@ -93,7 +94,7 @@ def get_gpu_memory(device):
 
 def adjust_learning_rate(optimizer, clf):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = clf.temp.lr * (0.1 ** (clf.temp.current_epoch // clf.temp.lr_sd))
+    lr = clf.training.learning_rate * (0.1 ** (clf.temp.current_epoch // clf.training.adjust_lr_every))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
@@ -102,16 +103,17 @@ def calcRegularization(model, logits_cell, data_all, clf):
 
     # this works because layer K-n embeddings are actually calculate for all layers K-m
     # with m=[n,..,K]; not just for m = n
-    # it is done this way to apply skip connections
+    # it is done this way to have the possibility to apply skip connections
 
-    # this current implementation is done for additional_hops = 2
     # it should already work with additional_hops = 1, with
     if(data_all.adjs):
-        inner_prediction = F.log_softmax(logits_cell[:data_all.adjs[model.num_layers].size[0]], dim=-1)
+        # this should be done with probabilities, so take softmax of logits
+        inner_prediction = F.softmax(logits_cell[:data_all.adjs[model.num_layers].size[0]], dim=-1)
         surface_triangle_probability_kl = torch.abs(inner_prediction[data_all.adjs[model.num_layers].edge_index[0, :]][:, 0] \
                                              - inner_prediction[data_all.adjs[model.num_layers].edge_index[1, :]][:, 0])
     else:
-        inner_prediction = F.log_softmax(logits_cell, dim=-1)
+        # this should be done with probabilities, so take softmax of logits
+        inner_prediction = F.softmax(logits_cell, dim=-1)
         surface_triangle_probability_kl = torch.abs(inner_prediction[data_all.edge_index[0, :]][:, 0] \
                                              - inner_prediction[data_all.edge_index[1, :]][:, 0])
 
@@ -141,11 +143,14 @@ def calcRegularization(model, logits_cell, data_all, clf):
 
     reg_loss = surface_triangle_probability_kl * clf.regularization.reg_weight
     # reg_loss = reg_loss.sum() / weight.sum()
-    reg_loss = reg_loss.sum()
+    # reg_loss = reg_loss.sum()
 
-    clf.temp.metrics.addRegLossItem(reg_loss, surface_triangle_probability_kl.size()[0])
+    # size of this should be batch_size * 4, because every cell has 4 neighbors
+    # and the weight is 1, thus simply pass the size, otherwise I would need to pass the sum of the weight
+    clf.temp.metrics.addRegLossItem(reg_loss.sum(), surface_triangle_probability_kl.size()[0])
 
-    return reg_loss
+    # currently weight per triangle is one, thus simply return the mean
+    return reg_loss.mean()
 
 
 def calcLossAndOA(model, logits_cell, logits_edge, data_all, clf):
@@ -156,6 +161,7 @@ def calcLossAndOA(model, logits_cell, logits_edge, data_all, clf):
     if (clf.regularization.cell_reg_type):
 
         if (clf.training.loss == "kl"):
+            # input is always expected in log-probabilities (hence log_softmax) while target is expected in probabilities
             cell_loss = F.kl_div(F.log_softmax(logits_cell, dim=-1), data_all.gt_batch[:, :2].to(clf.temp.device), reduction='none')
             cell_loss = torch.sum(cell_loss, dim=1)  # cf. formula for kl_div, summing over X (the dimensions)
             clf.temp.metrics.addOAItem(
@@ -225,11 +231,11 @@ def calcLossAndOA(model, logits_cell, logits_edge, data_all, clf):
     ###############################################################################################################
     ############################ area+angle+cc loss / total variation / regularization ############################
     ###############################################################################################################
-    if(clf.temp.reg_epoch is not None): # check if reg_epoch is not null
+    if(clf.regularization.reg_epoch is not None): # check if reg_epoch is not null
         if(clf.graph.additional_num_hops != 1):
             print("ERROR: clf.graph.additional_num_hops == 1 to use regularization")
             sys.exit(1)
-        if (clf.temp.current_epoch >= clf.temp.reg_epoch):
+        if (clf.temp.current_epoch >= clf.regularization.reg_epoch):
             reg_loss = calcRegularization(model,logits_cell,data_all,clf)
             loss+=reg_loss
 
@@ -243,6 +249,10 @@ def train(model, data_all, batch_loader, optimizer, clf):
 
     model.train() #switch the model in training mode
     clf.temp.metrics = Metrics()
+
+
+
+
     for batch_size, n_id, adjs in tqdm(batch_loader, ncols=50):
         data_all.n_id = n_id
         data_all.adjs = adjs
@@ -290,7 +300,7 @@ def train_test(model, data, clf):
     clf.temp.device = "cuda:" + str(clf.temp.args.gpu)
 
     # define the optimizer
-    optimizer = optim.Adam(model.parameters(), lr=clf.temp.lr)
+    optimizer = optim.Adam(model.parameters(), lr=clf.training.learning_rate)
 
     # define some color to help distinguish between train and test outputs
     TESTCOLOR = '\033[1;0;46m'
@@ -300,7 +310,7 @@ def train_test(model, data, clf):
 
     row = dict.fromkeys(list(clf.results_df.columns))
 
-    for current_epoch in range(clf.temp.start_epoch,clf.training.epochs+1):
+    for current_epoch in range(1,clf.training.epochs+1):
         # adjust learning rate to current epoch
         clf.temp.current_epoch = current_epoch
         adjust_learning_rate(optimizer, clf)
@@ -349,19 +359,20 @@ def train_test(model, data, clf):
             row['test_best_iou'] = clf.best_iou
 
             pprint.pprint(row)
-            # clf.results_df = clf.results_df.append(row,ignore_index=True)
+            clf.results_df = clf.results_df.append(row,ignore_index=True)
             clf.results_df.to_csv(clf.files.results,index=False)
 
 
         # save model every 10 epochs
         if current_epoch % clf.training.export_every == 0 or current_epoch == clf.training.epochs:
-            if current_epoch == clf.temp.start_epoch:
-                continue
             model_path = os.path.join(clf.paths.out_dir, "model_"+str(int(current_epoch))+".ptm")
             print(EXPORTCOLOR)
             print('Epoch {} -> Export model to {}'.format(current_epoch, model_path))
             print(NORMALCOLOR)
             torch.save(model.state_dict(), model_path)
+
+            # backup results file
+            copyfile(clf.files.results, os.path.splitext(clf.files.results)[0]+"_"+str(current_epoch)+".csv")
 
         # if current_epoch % clf.training.val_every == 0:
         #
