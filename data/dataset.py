@@ -91,76 +91,8 @@ def getDataset(clf):
         a=5
 
 
+    elif(clf.data.dataset == "ShapeNetManifoldPlus"):
 
-    elif(clf.data.dataset == "ethtrain"):
-        clf.paths.data = "/home/raphael/data/eth"
-        clf.training.files = []
-        clf.temp.inference_files = []
-        windows = os.listdir(os.path.join(clf.paths.data,'gt'))
-        for f in windows:
-            f = f.split('_')[0]
-            clf.training.files.append(os.path.join(clf.paths.data,'gt',f+'_lrtcs_0'))
-            if(f in clf.inference.files or clf.inference.files == "all"):
-                clf.temp.inference_files.append(os.path.join(clf.paths.data,'gt',f+'_lrtcs_0'))
-
-        clf.training.files = list(dict.fromkeys(clf.training.files))
-        clf.temp.inference_files = list(dict.fromkeys(clf.temp.inference_files))
-        clf.training.files = clf.training.files[:clf.temp.shapes_per_conf_per_class]
-
-
-    elif (clf.data.dataset == "eth3d"):
-        clf.paths.data = "/mnt/raphael/ETH3D/"
-        clf.temp.data_path = "/mnt/raphael/ETH3D/"
-
-        clf.temp.inference_files = []
-        if (clf.inference.files[0] == "all"):
-            clf.inference.files = ["meadow", "terrace", "delivery_area", "kicker", "pipes", "office", \
-                                        "playground", "terrains",  "relief", "relief_2", "electro", \
-                                        "courtyard", "facade"]
-        for i,scene in enumerate(clf.inference.files):
-            clf.temp.inference_files.append(os.path.join("/mnt/raphael/ETH3D", scene, "gt", scene+"_lrt_0"))
-
-
-    elif(clf.data.dataset == "myshapenet"):
-        clf.paths.data = "/mnt/raphael/ShapeNetManifoldPlus/"
-        classes = os.listdir(clf.paths.data)
-        clf.training.files = []
-
-        clf.temp.total_shapes_per_class = np.zeros(len(classes))
-
-        for cc,cl in enumerate(classes):
-
-            class_files = []
-
-            path = os.path.join(clf.paths.data, cl, "scans", "mine","")
-            shapes = os.listdir(path)
-
-            s = []
-            for shape in shapes:
-                s.append(shape.split('_')[0])
-            # remove duplicates, meaning same shape with differnt scan_conf:
-            shapes = list(dict.fromkeys(s))
-
-            a=5
-            # take some shapes per scan config
-            while(len(class_files) <  clf.temp.shapes_per_conf_per_class):
-                if(len(shapes) == 0):
-                    break
-                shape_conf = shapes[0]
-                file = os.path.join(clf.paths.data, cl, "gt", shape_conf + "_lrtcs_0")
-                if(not os.path.isfile(os.path.join(file + "_cbvf.txt"))):
-                    shapes.pop(0)
-                    continue
-                class_files.append(file)
-                clf.temp.total_shapes_per_class[cc]+=1
-                shapes.pop(0)
-
-            clf.training.files+=class_files
-
-        a=5
-
-    elif(clf.data.dataset == "shapenet"):
-        clf.paths.data = "/mnt/raphael/ProcessedShapeNet/ShapeNet.build/"
         classes = os.listdir(clf.paths.data)
         clf.training.files = []
 
@@ -190,10 +122,20 @@ def getDataset(clf):
                 clf.training.files.append(file)
                 shapes.pop(0)
 
-    elif (clf.data.dataset == "tat"):
-        for s in clf.data.inference_files:
-            clf.paths.data=os.path.join("/mnt/raphael/TanksAndTemples",s)
-            clf.temp.inference_file = s+"_lrt_0"
+
+    elif (clf.data.dataset == "eth3d"):
+        clf.paths.data = "/mnt/raphael/ETH3D/"
+        clf.temp.data_path = "/mnt/raphael/ETH3D/"
+
+        clf.temp.inference_files = []
+        if (clf.inference.files[0] == "all"):
+            clf.inference.files = ["meadow", "terrace", "delivery_area", "kicker", "pipes", "office", \
+                                        "playground", "terrains",  "relief", "relief_2", "electro", \
+                                        "courtyard", "facade"]
+        for i,scene in enumerate(clf.inference.files):
+            clf.temp.inference_files.append(os.path.join("/mnt/raphael/ETH3D", scene, "gt", scene+"_lrt_0"))
+
+
 
     else:
         print("{} is not a valid dataset".format(clf.data.dataset))

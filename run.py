@@ -56,27 +56,30 @@ def training(clf):
 
     print("\t-reduced data to {}% from {} to {} cells".format(clf.training.data_percentage*100, num_nodes, num_train_nodes))
 
+    # make a Munch for all the data
+    data = Munch()
+
     ## get a first batch with batch_size = n_train_files from all the dataset together (the batch includes all the nodes of all graphs)
     temp_loader = DataLoader(all_graphs, batch_size=len(clf.training.files), shuffle=True)
-    data = Munch()
-    data.sampler = Munch()
-    data.train = next(iter(temp_loader))
+    data.train = Munch()
+    data.train.all = next(iter(temp_loader))
 
     print("\nSample neighborhoods with:\n\t-clique size {}\n\t-{}+{} hops\n\t-batch size {}\n\t-self loops {}"\
           .format(clf.graph.clique_sizes, clf.graph.num_hops, clf.graph.additional_num_hops, clf.training.batch_size, clf.graph.self_loops))
     clf.temp.clique_size=clf.graph.clique_sizes*(clf.graph.num_hops+clf.graph.additional_num_hops)
 
     if(not clf.model.edge_convs and clf.graph.self_loops):
-        data.train.edge_index = add_self_loops(data.train.edge_index)[0]
-    data.sampler.train = NeighborSampler(edge_index=data.train.edge_index, node_idx=train_mask,
+        data.train.all.edge_index = add_self_loops(data.train.all.edge_index)[0]
+    data.train.batches = NeighborSampler(edge_index=data.train.all.edge_index, node_idx=train_mask,
                                    sizes=clf.temp.clique_size, batch_size=clf.training.batch_size, sampler=None,
                                    shuffle=True, drop_last=True, return_e_id=clf.model.edge_convs)
 
     ##################################
     ###### load validation data ######
     ##################################
-    data.sampler.validation = []
-    data.validation = []
+    data.validation = Munch()
+    data.validation.all = []
+    data.validation.batches = []
     if(clf.validation.files is not None):
         data.validation_names = clf.validation.files
         clf.temp.batch_size = clf.validation.batch_size
@@ -84,8 +87,8 @@ def training(clf):
         for file in tqdm(clf.validation.files, ncols=50):
             # print("\t-", file)
             _,d,subgraph_sampler = prepareSample(clf, file)
-            data.validation.append(d)
-            data.sampler.validation.append(subgraph_sampler)
+            data.validation.all.append(d)
+            data.validation.batches.append(subgraph_sampler)
 
     ##############################
     ### create (or load) and (re)train model ###
@@ -276,7 +279,7 @@ if __name__ == "__main__":
     if(not os.path.isfile(clf.files.config)):
         copyfile(args.conf,clf.files.config)
     # create the results df
-    clf.results_df = pd.DataFrame(columns=['epoch', 'train_loss', 'train_loss_reg', 'train_OA', 'test_loss', 'test_loss_reg', 'test_OA', 'test_iou', 'test_best_iou'])
+    clf.results_df = pd.DataFrame(columns=['iteration', 'epoch', 'train_loss', 'train_loss_reg', 'train_OA', 'test_loss', 'test_loss_reg', 'test_OA', 'test_iou', 'test_best_iou'])
     clf.best_iou = 0
 
 
@@ -297,7 +300,7 @@ if __name__ == "__main__":
     clf.data.classes = clf.training.classes
     clf.data.scan_confs = clf.training.scan_confs
     clf.temp.shapes_per_conf_per_class = clf.training.shapes_per_conf_per_class
-    if (args.training):
+    if(args.training):
         # save all training print outputs to the .log file below
         sys.stdout = Logger(os.path.join(clf.paths.out_dir, "log.txt"))
         clf.temp.logger = sys.stdout

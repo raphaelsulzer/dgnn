@@ -106,40 +106,40 @@ class Trainer():
         self.model = model
 
 
-    def calcRegularization(self, logits_cell, data_all, clf):
+    def calcRegularization(self, logits_cell, data, clf, metrics):
 
         # this works because layer K-n embeddings are actually calculate for all layers K-m
         # with m=[n,..,K]; not just for m = n
         # it is done this way to have the possibility to apply skip connections
 
         # it should already work with additional_hops = 1, with
-        if(data_all.adjs):
+        if(data.batch_adjs):
             # this should be done with probabilities, so take softmax of logits
-            inner_prediction = F.softmax(logits_cell[:data_all.adjs[self.model.num_layers].size[0]], dim=-1)
-            surface_triangle_probability_kl = torch.abs(inner_prediction[data_all.adjs[self.model.num_layers].edge_index[0, :]][:, 0] \
-                                                 - inner_prediction[data_all.adjs[self.model.num_layers].edge_index[1, :]][:, 0])
+            inner_prediction = F.softmax(logits_cell[:data.batch_adjs[self.model.num_layers].size[0]], dim=-1)
+            surface_triangle_probability_kl = torch.abs(inner_prediction[data.batch_adjs[self.model.num_layers].edge_index[0, :]][:, 0] \
+                                                 - inner_prediction[data.batch_adjs[self.model.num_layers].edge_index[1, :]][:, 0])
         else:
             # this should be done with probabilities, so take softmax of logits
             inner_prediction = F.softmax(logits_cell, dim=-1)
-            surface_triangle_probability_kl = torch.abs(inner_prediction[data_all.edge_index[0, :]][:, 0] \
-                                                 - inner_prediction[data_all.edge_index[1, :]][:, 0])
+            surface_triangle_probability_kl = torch.abs(inner_prediction[data.edge_index[0, :]][:, 0] \
+                                                 - inner_prediction[data.edge_index[1, :]][:, 0])
 
 
         ## for their source and target nodes
-        # li=inner_prediction[adjs[self.model.num_layers+1].edge_index[0,:]][:,0]
-        # ri=inner_prediction[adjs[self.model.num_layers+1].edge_index[1,:]][:,0]
-        # lo=inner_prediction[adjs[self.model.num_layers+1].edge_index[0,:]][:,1]
-        # ro=inner_prediction[adjs[self.model.num_layers+1].edge_index[1,:]][:,1]
-        # inner_subgraph_indicies = adjs[self.model.num_layers+1].size[0]
-        # inner_prediction = F.log_softmax(logits_cell[:data_all.adjs[self.model.num_layers + 1].size[0]], dim=-1)
+        # li=inner_prediction[batch_adjs[self.model.num_layers+1].edge_index[0,:]][:,0]
+        # ri=inner_prediction[batch_adjs[self.model.num_layers+1].edge_index[1,:]][:,0]
+        # lo=inner_prediction[batch_adjs[self.model.num_layers+1].edge_index[0,:]][:,1]
+        # ro=inner_prediction[batch_adjs[self.model.num_layers+1].edge_index[1,:]][:,1]
+        # inner_subgraph_indicies = batch_adjs[self.model.num_layers+1].size[0]
+        # inner_prediction = F.log_softmax(logits_cell[:data_all.batch_adjs[self.model.num_layers + 1].size[0]], dim=-1)
         # ## now take only the edge of the inner subgraph, because only for these edges, I have predictions
-        # surface_triangle_prob_kl = torch.abs(inner_prediction[data_all.adjs[self.model.num_layers + 1].edge_index[0, :]][:, 0] \
-        #                                      - inner_prediction[data_all.adjs[self.model.num_layers + 1].edge_index[1, :]][:, 0])
+        # surface_triangle_prob_kl = torch.abs(inner_prediction[data_all.batch_adjs[self.model.num_layers + 1].edge_index[0, :]][:, 0] \
+        #                                      - inner_prediction[data_all.batch_adjs[self.model.num_layers + 1].edge_index[1, :]][:, 0])
 
-        # surface_area = data_all.edge_attr[data_all.adjs[self.model.num_layers + 1].e_id].squeeze()[:, 0].to(clf.temp.device)
+        # surface_area = data_all.edge_attr[data_all.batch_adjs[self.model.num_layers + 1].e_id].squeeze()[:, 0].to(clf.temp.device)
 
         # if(clf.regularization.reg_type):
-        #     weight = data_all.edge_attr[data_all.adjs[self.model.num_layers].e_id].squeeze()[:, 0].to(clf.temp.device)
+        #     weight = data_all.edge_attr[data_all.batch_adjs[self.model.num_layers].e_id].squeeze()[:, 0].to(clf.temp.device)
         # else:
         #     weight =
 
@@ -154,47 +154,50 @@ class Trainer():
 
         # size of this should be batch_size * 4, because every cell has 4 neighbors
         # and the weight is 1, thus simply pass the size, otherwise I would need to pass the sum of the weight
-        clf.temp.metrics.addRegLossItem(reg_loss.sum(), surface_triangle_probability_kl.size()[0])
+        metrics.addRegLossItem(reg_loss.sum(), surface_triangle_probability_kl.size()[0])
 
         # currently weight per triangle is one, thus simply return the mean
         return reg_loss.mean()
 
 
-    def calcLossAndOA(self, logits_cell, logits_edge, data_all, clf, metrics):
+    def calcLossAndOA(self, logits_cell, logits_edge, data, clf, metrics):
+
 
         ###############################################################
         ########################## cell loss ##########################
         ###############################################################
         if (clf.regularization.cell_reg_type):
 
+
+
             if (clf.training.loss == "kl"):
                 # input is always expected in log-probabilities (hence log_softmax) while target is expected in probabilities
-                cell_loss = F.kl_div(F.log_softmax(logits_cell, dim=-1), data_all.gt_batch[:, :2].to(clf.temp.device), reduction='none')
+                cell_loss = F.kl_div(F.log_softmax(logits_cell, dim=-1), data.batch_gt[:, :2].to(clf.temp.device), reduction='none')
                 cell_loss = torch.sum(cell_loss, dim=1)  # cf. formula for kl_div, summing over X (the dimensions)
-                clf.temp.metrics.addOAItem(
-                    torch.sum(data_all.gt_batch[:, 2] == F.log_softmax(logits_cell, dim=-1).argmax(1).cpu()).item(),
-                    data_all.x_batch.shape[0])
+                metrics.addOAItem(
+                    torch.sum(data.batch_gt[:, 2] == F.log_softmax(logits_cell, dim=-1).argmax(1).cpu()).item(),
+                    data.batch_x.shape[0])
             elif(clf.training.loss == "bce"):
                 # supervise with graph cut label
-                cell_loss = F.binary_cross_entropy_with_logits(logits_cell.squeeze(dim=-1), data_all.gt_batch[:, 3].to(clf.temp.device), reduction='none')
-                clf.temp.metrics.addOAItem(
-                    torch.sum(data_all.gt_batch[:, 3] == torch.round(F.sigmoid(logits_cell.squeeze(dim=-1))).cpu()).item(),
-                    data_all.x_batch.shape[0])
+                cell_loss = F.binary_cross_entropy_with_logits(logits_cell.squeeze(dim=-1), data.batch_gt[:, 3].to(clf.temp.device), reduction='none')
+                metrics.addOAItem(
+                    torch.sum(data.batch_gt[:, 3] == torch.round(F.sigmoid(logits_cell.squeeze(dim=-1))).cpu()).item(),
+                    data.batch_x.shape[0])
             elif (clf.training.loss == "mse"):
-                cell_loss = F.mse_loss(F.sigmoid(logits_cell).squeeze(), data_all.gt_batch[:, 0].to(clf.temp.device))
+                cell_loss = F.mse_loss(F.sigmoid(logits_cell).squeeze(), data.batch_gt[:, 0].to(clf.temp.device))
             else:
                 print("{} is not a valid loss. choose either kl or mse".format(clf.training.loss))
                 sys.exit(1)
 
             # multiply loss per cell with volume of the cell
-            shape_weight = data_all.x_batch[:, 0].to(clf.temp.device)
-            # shape_weight =  torch.sqrt(x_batch[:,0].to(clf.temp.device))
-            # shape_weight =  torch.log(1+x_batch[:,0].to(clf.temp.device))
+            shape_weight = data.batch_x[:, 0].to(clf.temp.device)
+            # shape_weight =  torch.sqrt(batch_x[:,0].to(clf.temp.device))
+            # shape_weight =  torch.log(1+batch_x[:,0].to(clf.temp.device))
 
             cell_loss = cell_loss * shape_weight
 
             # add loss to metrics for statistics
-            clf.temp.metrics.addCellLossItem(cell_loss.sum(),shape_weight.sum())
+            metrics.addCellLossItem(cell_loss.sum(),shape_weight.sum())
             # only works if additional_hops > 0
 
 
@@ -206,14 +209,14 @@ class Trainer():
             #     cell_loss = cell_loss.sum() / shape_weight.sum()
             # else:
             #     if (clf.regularization.inside_outside_weight[0] != clf.regularization.inside_outside_weight[1]):
-            #         io_weight = data_all.gt_batch[:, 1].to(clf.temp.device) * clf.regularization.inside_outside_weight[0] + \
-            #                     data_all.gt_batch[:, 2].to(clf.temp.device) * clf.regularization.inside_outside_weight[1]
+            #         io_weight = data_all.batch_gt[:, 1].to(clf.temp.device) * clf.regularization.inside_outside_weight[0] + \
+            #                     data_all.batch_gt[:, 2].to(clf.temp.device) * clf.regularization.inside_outside_weight[1]
             #         cell_loss = cell_loss * io_weight
             #         cell_loss = cell_loss.sum() / io_weight.sum()
             #     else:
             #         cell_loss = torch.mean(cell_loss)*10**6
         # else: # without any normalization of the loss:
-        #     cell_loss = F.kl_div(F.log_softmax(logits_cell, dim=-1), data_all.gt_batch[:, 1:].to(clf.temp.device), reduction='batchmean')
+        #     cell_loss = F.kl_div(F.log_softmax(logits_cell, dim=-1), data_all.batch_gt[:, 1:].to(clf.temp.device), reduction='batchmean')
         loss = cell_loss
 
         if ((loss != loss).any()):
@@ -227,8 +230,8 @@ class Trainer():
         # only works if additional_hops > 0
         edge_loss=0
         if(logits_edge is not None):
-            gt_left = data_all.y[data_all.adjs[self.model.num_layers].edge_index[0]][:,1]
-            gt_right = data_all.y[data_all.adjs[self.model.num_layers].edge_index[1]][:,1]
+            gt_left = data.y[data.batch_adjs[self.model.num_layers].edge_index[0]][:,1]
+            gt_right = data.y[data.batch_adjs[self.model.num_layers].edge_index[1]][:,1]
             edge_loss=F.kl_div(F.log_softmax(logits_edge).squeeze(),(gt_left-gt_right).to(clf.temp.device))
             if((edge_loss != edge_loss).any()):
                 print("here")
@@ -243,7 +246,7 @@ class Trainer():
                 print("ERROR: clf.graph.additional_num_hops == 1 to use regularization")
                 sys.exit(1)
             if (clf.temp.current_epoch >= clf.regularization.reg_epoch):
-                reg_loss = self.calcRegularization(logits_cell,data_all,clf)
+                reg_loss = self.calcRegularization(logits_cell,data,clf, metrics)
                 loss+=reg_loss
 
         # return loss for mini batch gradient decent
@@ -252,56 +255,25 @@ class Trainer():
     ####################################################
     ############## TRAINING AND TESTING ################
     ####################################################
-    def train(self, data_all, batch_loader, optimizer, clf):
+    def train(self, data_train, optimizer, clf):
 
         self.model.train() #switch the model in training mode
-        clf.training.metrics = Metrics()
 
+        logits_edge = None
+        if(clf.model.edge_prediction):
+            logits_cell, logits_edge = self.model(data_train)
+        else:
+            logits_cell = self.model(data_train)
 
+        data_train.batch_x = data_train.all.x[data_train.batch_n_id[:data_train.batch_adjs[self.model.num_layers-1].size[1]]]
+        data_train.batch_gt = data_train.all.y[data_train.batch_n_id[:data_train.batch_adjs[self.model.num_layers-1].size[1]]]
+        loss = self.calcLossAndOA(logits_cell, logits_edge, data_train, clf, clf.training.metrics)
 
-
-        for batch_size, n_id, adjs in tqdm(batch_loader, ncols=50):
-            data_all.n_id = n_id
-            data_all.adjs = adjs
-            data_all.x_batch = data_all.x[n_id[:adjs[self.model.num_layers-1].size[1]]]
-            data_all.gt_batch = data_all.y[n_id[:adjs[self.model.num_layers-1].size[1]]]
-            # outer_subgraph_indicies = adjs[self.model.num_layers].size[0] = adjs[self.model.num_layers-1].size[1]
-
-            logits_edge = None
-            if(clf.model.edge_prediction):
-                logits_cell, logits_edge = self.model(data_all)
-            else:
-                logits_cell = self.model(data_all)
-            loss = self.calcLossAndOA(logits_cell, logits_edge, data_all, clf)
-
-            optimizer.zero_grad()  # put gradient to zero
-            loss.backward()
-            # for p in self.model.parameters():  # we clip the gradient at norm 1
-            #     p.grad.data.clamp_(-1, 1)
-            optimizer.step()  # one SGD (=stochastic gradient descent) step
-
-
-
-    # def test(self, data_all, batch_loader, clf):
-    #
-    #     # DEPRECATED:
-    #     # Testing is done with inference code which is implemented in the model because it
-    #     # requires different passes through the model depending if data is mini-batched or not.
-    #
-    #     self.model.eval()  # batchnorms in eval mode
-    #     clf.temp.metrics = Metrics()  # init new one for test
-    #     for batch_size, n_id, adjs in batch_loader:
-    #         data_all.n_id = n_id
-    #         data_all.adjs = adjs
-    #         data_all.x_batch = data_all.x[n_id[:adjs[self.model.num_layers-1].size[1]]]
-    #         data_all.gt_batch = data_all.y[n_id[:adjs[self.model.num_layers-1].size[1]]]
-    #         with torch.no_grad():
-    #             logits_edge = None
-    #             if(clf.model.edge_prediction):
-    #                 logits_cell, logits_edge = self.self.model(data_all)
-    #             else:
-    #                 logits_cell = self.model(data_all)
-    #             self.calcLossAndOA(logits_cell, logits_edge, data_all, clf)
+        optimizer.zero_grad()  # put gradient to zero
+        loss.backward()
+        # for p in self.model.parameters():  # we clip the gradient at norm 1
+        #     p.grad.data.clamp_(-1, 1)
+        optimizer.step()  # one SGD (=stochastic gradient descent) step
 
 
     def train_test(self, data, clf):
@@ -319,93 +291,108 @@ class Trainer():
 
         row = dict.fromkeys(list(clf.results_df.columns))
 
+        # init metrics
+        clf.training.metrics = Metrics()
+        iterations = 0
+
         for current_epoch in range(1,clf.training.epochs+1):
             # adjust learning rate to current epoch
             clf.temp.current_epoch = current_epoch
             adjust_learning_rate(optimizer, clf)
             # train one epoch
-            # for batch_size, n_id, adjs in tqdm(batch_loader, ncols=50):
-            #     # now pass batch_size ... to train
-            self.train(data.train, data.sampler.train, optimizer, clf)
+            for data.train.batch_size, data.train.batch_n_id, data.train.batch_adjs in data.train.batches:
 
-            print('Epoch %3d -> Train Loss (cell): %1.4f,  Train Loss (reg): %1.4f, Train OA: %3.2f%%\n'
-                % (current_epoch,
-                    clf.temp.metrics.getCellLoss(),
-                    clf.temp.metrics.getRegLoss(),
-                    clf.temp.metrics.getOA()))
+                iterations += 1
 
-            row['epoch'] = current_epoch
-            row['train_loss'] = clf.temp.metrics.getCellLoss()
-            row['train_loss_reg'] = clf.temp.metrics.getRegLoss()
-            row['train_OA'] = clf.temp.metrics.getOA()
+                self.train(data.train, optimizer, clf)
 
-            # do testing (ie inference in my case), if this is a test epoch
-            if current_epoch % clf.validation.val_every == 0:
+                row['iteration'] = iterations
+                row['epoch'] = current_epoch
+                row['train_loss'] = clf.training.metrics.getCellLoss()
+                row['train_loss_reg'] = clf.training.metrics.getRegLoss()
+                row['train_OA'] = clf.training.metrics.getOA()
 
-                OA = 0;loss = 0;samples = 0;weight = 0;reg = 0;edges = 0; iou = 0;
-                for i,d in enumerate(tqdm(data.validation, ncols=50)):
-                    prediction = self.inference(d,[],clf)
-                    temp=gm.generate(d, prediction, clf)
-                    iou+=temp[1]
-                    # export one shape per class
-                    if(i%clf.validation.shapes_per_conf_per_class == 0):
-                        temp[0].export(os.path.join(clf.paths.out_dir,"generation",d["category"]+"_"+d['id']+".ply"))
-                    # keep track of metrics over all scenes
-                    OA+= clf.temp.metrics.OA_sum; samples+=clf.temp.metrics.samples_sum
-                    loss+= clf.temp.metrics.cell_sum; weight+=clf.temp.metrics.weight_sum
-                    reg+= clf.temp.metrics.reg_sum; edges+=clf.temp.metrics.edges_sum
+                if(iterations % clf.training.print_every) == 0 or iterations == 1:
 
-                re = reg/edges if (reg>0.0 and edges>0.0) else float("nan")
+                    print('[%3d] Epoch %3d -> Train Loss (cell): %1.4f,  Train Loss (reg): %1.4f, Train OA: %3.2f%%'
+                        % (iterations, current_epoch,
+                           clf.training.metrics.getCellLoss(),
+                           clf.training.metrics.getRegLoss(),
+                           clf.training.metrics.getOA()))
 
-                iou = iou*100/len(data.validation)
-                if(iou > clf.best_iou):
-                    clf.best_iou = iou
-                    model_path = os.path.join(clf.paths.out_dir,"model_best.ptm")
+                    # reinit new metrics:
+                    clf.training.metrics = Metrics()
+
+                # do testing (ie inference in my case), if this is a test epoch
+                if(iterations % clf.training.val_every) == 0:
+
+                    OA = 0;loss = 0;samples = 0;weight = 0;reg = 0;edges = 0; iou = 0;
+                    for i,d in enumerate(tqdm(data.validation.all, ncols=50)):
+                        prediction = self.inference(d,[],clf)
+                        temp=gm.generate(d, prediction, clf)
+                        iou+=temp[1]
+                        # export one shape per class
+                        if(i%clf.validation.shapes_per_conf_per_class == 0):
+                            temp[0].export(os.path.join(clf.paths.out_dir,"generation",d["category"]+"_"+d['id']+".ply"))
+                        # keep track of metrics over all scenes
+                        OA+= clf.inference.metrics.OA_sum; samples+=clf.inference.metrics.samples_sum
+                        loss+= clf.inference.metrics.cell_sum; weight+=clf.inference.metrics.weight_sum
+                        reg+= clf.inference.metrics.reg_sum; edges+=clf.inference.metrics.edges_sum
+
+                    re = reg/edges if (reg>0.0 and edges>0.0) else float("nan")
+
+                    iou = iou*100/len(data.validation)
+                    if(iou > clf.best_iou):
+                        clf.best_iou = iou
+                        model_path = os.path.join(clf.paths.out_dir,"model_best.ptm")
+                        torch.save(self.model.state_dict(), model_path)
+
+                    ## save everything in the dataframe
+                    row['test_loss'] = loss/weight
+                    row['test_loss_reg'] = re
+                    row['test_OA'] = OA*100/samples
+                    row['test_iou'] = iou
+                    row['test_best_iou'] = clf.best_iou
+
+                    pprint.pprint(row)
+                    clf.results_df = clf.results_df.append(row,ignore_index=True)
+                    clf.results_df.to_csv(clf.files.results,index=False)
+
+
+                # save model every 10 epochs
+                if (iterations % clf.training.export_every) == 0:
+                    model_path = os.path.join(clf.paths.out_dir, "model_"+str(int(current_epoch))+".ptm")
+                    print(EXPORTCOLOR)
+                    print('[{}] Epoch {} -> Export model to {}'.format(iterations, current_epoch, model_path))
+                    print(NORMALCOLOR)
                     torch.save(self.model.state_dict(), model_path)
 
-                ## save everything in the dataframe
-                row['test_loss'] = loss/weight
-                row['test_loss_reg'] = re
-                row['test_OA'] = OA*100/samples
-                row['test_iou'] = iou
-                row['test_best_iou'] = clf.best_iou
-
-                pprint.pprint(row)
-                clf.results_df = clf.results_df.append(row,ignore_index=True)
-                clf.results_df.to_csv(clf.files.results,index=False)
-
-
-            # save model every 10 epochs
-            if current_epoch % clf.training.export_every == 0 or current_epoch == clf.training.epochs:
-                model_path = os.path.join(clf.paths.out_dir, "model_"+str(int(current_epoch))+".ptm")
-                print(EXPORTCOLOR)
-                print('Epoch {} -> Export model to {}'.format(current_epoch, model_path))
-                print(NORMALCOLOR)
-                torch.save(self.model.state_dict(), model_path)
-
-                # backup results file
-                copyfile(clf.files.results, os.path.splitext(clf.files.results)[0]+"_"+str(current_epoch)+".csv")
+                    # backup results file
+                    copyfile(clf.files.results, os.path.splitext(clf.files.results)[0]+"_"+str(current_epoch)+".csv")
 
 
 
     ######################################################
     ###################### INFERENCE #####################
     ######################################################
-    def inference(self, data_all, subgraph_loader, clf):
+    def inference(self, data_inference, subgraph_loader, clf):
 
         logits_edge = None
-        data_all.adjs = 0
         self.model.eval()  # batchnorms in eval mode
         with torch.no_grad():
             if(clf.inference.per_layer and clf.temp.batch_size):
                 # print("\nInference per layer per batch")
-                logits_cell = self.model.inference_layer_batch(data_all, subgraph_loader)
+                assert(subgraph_loader)
+                logits_cell = self.model.inference_layer_batch(data_inference, subgraph_loader)
             elif(clf.inference.per_layer and not clf.temp.batch_size):
                 # print("\nInference per layer")
-                logits_cell = self.model.inference_layer(data_all)
+                assert(not subgraph_loader)
+                data_inference.batch_adjs = []  # necessary to know in the calcRegularization function if data is batched or not
+                logits_cell = self.model.inference_layer(data_inference)
             elif(not clf.inference.per_layer and clf.temp.batch_size):
                 # print("\nInference per batch")
-                logits_cell = self.model.inference_batch_layer(data_all, subgraph_loader)
+                assert(subgraph_loader)
+                logits_cell = self.model.inference_batch_layer(data_inference, subgraph_loader)
             else:
                 print("not a valid inference method set either per_layer to true or specify batch_size")
                 sys.exit(1)
@@ -415,24 +402,24 @@ class Trainer():
 
         # calc loss and OA
         if(clf.inference.has_label):
-            clf.temp.metrics = Metrics()
-            data_all.x_batch = data_all.x
-            data_all.gt_batch = data_all.y
+            clf.inference.metrics = Metrics()
+            data_inference.batch_x = data_inference.x
+            data_inference.batch_gt = data_inference.y
 
-            self.calcLossAndOA(logits_cell, logits_edge, data_all, clf)
-            # clf.results.loss_test = clf.temp.metrics.getCellLoss()
-            # clf.results.OA_test = clf.temp.metrics.getOA()
+            self.calcLossAndOA(logits_cell, logits_edge, data_inference, clf, clf.inference.metrics)
+            # clf.results.loss_test = clf.inference.metrics.getCellLoss()
+            # clf.results.OA_test = clf.inference.metrics.getOA()
 
-            # clf.results.loss_test = clf.temp.metrics.loss.cell.value()[0]
-            # clf.results.OA_test = clf.temp.metrics.OA * 100 / clf.temp.metrics.n_samples
+            # clf.results.loss_test = clf.inference.metrics.loss.cell.value()[0]
+            # clf.results.OA_test = clf.inference.metrics.OA * 100 / clf.inference.metrics.n_samples
 
-            # clf.results.loss_test = calcLossAndOA(model, logits_cell, logits_edge, data_all, clf)
+            # clf.results.loss_test = calcLossAndOA(model, logits_cell, logits_edge, data_inference_all, clf)
             # clf.results.loss_test = clf.results.loss_test.item()
-            # print("Confusion matrix of {} cells:".format(len(data_all.y)))
+            # print("Confusion matrix of {} cells:".format(len(data_inference_all.y)))
             # print("pre_in, pre_out")
-            # print(clf.temp.metrics.confusion_matrix.CM)
-            # print("OA cells: ", clf.temp.metrics.confusion_matrix.overall_accuracy())
-            # clf.results.OA_test = float(clf.temp.metrics.confusion_matrix.overall_accuracy())
+            # print(clf.inference.metrics.confusion_matrix.CM)
+            # print("OA cells: ", clf.inference.metrics.confusion_matrix.overall_accuracy())
+            # clf.results.OA_test = float(clf.inference.metrics.confusion_matrix.overall_accuracy())
 
 
             # print("OA cells: ", clf.results.OA_test)

@@ -193,7 +193,7 @@ class SurfaceNet(nn.Module):
     #######################################################
     ##################### TRAIN FORWARD ###################
     #######################################################
-    def forward(self, data_all):
+    def forward(self, data):
         # produces final embedding batch per batch
 
         """
@@ -203,18 +203,18 @@ class SurfaceNet(nn.Module):
         """
 
         if(self.clf.regularization.cell_reg_type):
-            x=data_all.x[data_all.n_id, 1:].to(self.clf.temp.device) # put this batch on gpu
+            x=data.all.x[data.batch_n_id, 1:].to(self.clf.temp.device) # put this batch on gpu
         else:
-            x=data_all.x[data_all.n_id, :].to(self.clf.temp.device) # put this batch on gpu
+            x=data.all.x[data.batch_n_id, :].to(self.clf.temp.device) # put this batch on gpu
         # if(self.clf.regularization.reg_type):
         #     xe=data_all.edge_attr[:,1:]
         # else:
         #     xe=data_all.edge_attr
 
         for i in range(self.num_layers):
-            edge_index, e_id, size = data_all.adjs[i]
+            edge_index, e_id, size = data.batch_adjs[i]
             # apply conv, norm, relu
-            x = self.convs[i][0]((x, x[:size[1]]), data_all.edge_attr[e_id].to(self.clf.temp.device), edge_index.to(self.clf.temp.device))
+            x = self.convs[i][0]((x, x[:size[1]]), data.all.edge_attr[e_id].to(self.clf.temp.device), edge_index.to(self.clf.temp.device))
             x = self.convs[i][1](x)
             x = self.convs[i][2](x)
             # x = F.dropout(x, p=0.5, training=self.training)

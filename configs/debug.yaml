@@ -46,12 +46,11 @@ inference:
 validation:
   dataset: ModelNet10
   classes: null
-  shapes_per_conf_per_class: 2
+  shapes_per_conf_per_class: 1
   scan_confs:
     - 4
   batch_size: 0   # also for validation
   per_layer: 1    # also for validation
-  val_every: 5
 training:
   dataset: ModelNet10
   classes: null
@@ -62,12 +61,14 @@ training:
   files:
     - null
   batch_size: 128
-  epochs: 15
+  epochs: 21
   loss: kl
   learning_rate: 0.005
   adjust_lr_every: 16
   load_epoch: 0
-  export_every: 10
+  print_every: 1000
+  val_every: 2000
+  export_every: 5000
 model:
   type: sage
   encoder: null
