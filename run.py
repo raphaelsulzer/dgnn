@@ -288,6 +288,8 @@ if __name__ == "__main__":
 
     ############ TRAINING #############
     clf.temp.mode = "training"
+    clf.training.path = os.path.join(clf.paths.data,clf.training.dataset)
+    clf.validation.path = os.path.join(clf.paths.data,clf.validation.dataset)
     clf.data.dataset = clf.training.dataset
     clf.data.classes = clf.training.classes
     clf.data.scan_confs = clf.training.scan_confs
@@ -301,6 +303,7 @@ if __name__ == "__main__":
 
     ############ INFERENCE #############
     clf.temp.mode = "inference"
+    clf.inference.path = os.path.join(clf.paths.data,clf.inference.dataset)
     clf.data.dataset = clf.inference.dataset
     clf.data.classes = clf.inference.classes
     clf.data.scan_confs = clf.inference.scan_confs

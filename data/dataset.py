@@ -36,10 +36,10 @@ def getDataset(clf):
         a=5
 
 
-    elif(clf.data.dataset == "modelnet"):
+    elif(clf.data.dataset == "ModelNet10"):
 
         if not clf.data.classes:
-            classes = os.listdir(clf.paths.data)
+            classes = os.listdir(clf.training.path)
         else:
             classes = clf.data.classes
         if 'x' in classes: classes.remove('x')
@@ -60,26 +60,26 @@ def getDataset(clf):
         for c in classes:
             for s in clf.data.scan_confs:
                 if(clf.temp.mode == "training"):
-                    models = os.listdir(os.path.join(clf.paths.data,c,"train"))
+                    models = os.listdir(os.path.join(clf.training.path,c,"train"))
                     models = models[:clf.training.shapes_per_conf_per_class]
                     for m in models:
-                        if os.path.isfile(os.path.join(clf.paths.data,c,"2_watertight",m)):
+                        if os.path.isfile(os.path.join(clf.training.path,c,"2_watertight",m)):
                             n = re.split(r'[_.]+',m)
-                            d = {"category":n[0],"id":n[1],"scan_conf":str(s)}
+                            d = {"path":clf.training.path,"category":n[0],"id":n[1],"scan_conf":str(s)}
                             clf.training.files.append(d)
 
-                    models = os.listdir(os.path.join(clf.paths.data,c,"test"))
+                    models = os.listdir(os.path.join(clf.validation.path,c,"test"))
                     models = models[:clf.validation.shapes_per_conf_per_class]
                     for m in models:
-                        if os.path.isfile(os.path.join(clf.paths.data,c,"2_watertight",m)):
+                        if os.path.isfile(os.path.join(clf.validation.path,c,"2_watertight",m)):
                             n = re.split(r'[_.]+',m)
-                            d = {"category":n[0],"id":n[1],"scan_conf":str(s)}
+                            d = {"path":clf.validation.path,"category":n[0],"id":n[1],"scan_conf":str(s)}
                             clf.validation.files.append(d)
                 elif(clf.temp.mode == "inference"):
-                    models = os.listdir(os.path.join(clf.paths.data,c,"train"))
+                    models = os.listdir(os.path.join(clf.inference.path,c,"test"))
                     models = models[:clf.inference.shapes_per_conf_per_class]
                     for m in models:
-                        if os.path.isfile(os.path.join(clf.paths.data,c,"2_watertight",m)):
+                        if os.path.isfile(os.path.join(clf.inference.path,c,"2_watertight",m)):
                             n = re.split(r'[_.]+',m)
                             d = {"category":n[0],"id":n[1],"scan_conf":str(s)}
                             clf.inference.files.append(d)

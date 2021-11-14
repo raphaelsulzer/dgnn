@@ -56,4 +56,7 @@ if __name__ == "__main__":
         for f in files:
             args.out_dir = os.path.join(args.user_dir,args.data_dir,c,"3_scans")
             args.f = f
-            main(args)
+            try:
+                main(args)
+            except:
+                print("error in {}/{}".format(c,f))

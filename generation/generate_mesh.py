@@ -105,10 +105,10 @@ def generate(data, prediction, clf):
     labels = F.log_softmax(prediction[data.y[:, 4] == 0], dim=-1).argmax(1).numpy()
 
     ### reconstruction
-    if(clf.data.dataset == "modelnet"):
-        mfile = os.path.join(clf.paths.data, data.category, "gt", str(clf.data.scan_confs[0]), data.id, data.category + "_" + data.id + "_3dt.npz")
+    if(clf.data.dataset == "ModelNet10"):
+        mfile = os.path.join(clf.validation.path, data.category, "gt", str(clf.data.scan_confs[0]), data.id, data.category + "_" + data.id + "_3dt.npz")
     elif(clf.data.dataset == "reconbench"):
-        mfile = os.path.join(clf.paths.data, data.category, "gt",  data.id + "_" + data.scan_conf + "_3dt.npz")
+        mfile = os.path.join(clf.validation.path, data.category, "gt",  data.id + "_" + data.scan_conf + "_3dt.npz")
     else:
         print("NOT IMPLEMENTED ERROR: loading of {} dataset!".format(clf.data.dataset))
         sys.exit(1)
@@ -143,7 +143,7 @@ def generate(data, prediction, clf):
     if(clf.inference.fix_orientation):
         trimesh.repair.fix_normals(recon_mesh)
 
-    gt_file = os.path.join(clf.paths.data, data.category, "convonet", str(clf.data.scan_confs[0]), data.id,
+    gt_file = os.path.join(clf.validation.path, data.category, "convonet", str(clf.data.scan_confs[0]), data.id,
                            "points.npz")
 
     gt_data = np.load(gt_file)

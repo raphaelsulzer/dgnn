@@ -32,8 +32,8 @@ graph:
     - -1
   self_loops: 0
 inference:
-  dataset: modelnet
-  shapes_per_conf_per_class: 10
+  dataset: ModelNet10
+  shapes_per_conf_per_class: 1
   classes: null
   files: null
 #    - monitor_0130
@@ -51,7 +51,7 @@ inference:
   graph_cut: true
   fix_orientation: false
 validation:
-  dataset: modelnet
+  dataset: ModelNet10
   shapes_per_conf_per_class: 20
   scan_confs:
     - 4
@@ -61,10 +61,10 @@ validation:
   graph_cut: true
   fix_orientation: true
 training:
-  dataset: modelnet
+  dataset: ModelNet10
   classes: null
-  data_percentage: 0.8
-  shapes_per_conf_per_class: 10
+  data_percentage: 0.9
+  shapes_per_conf_per_class: 150
   scan_confs:
     - 4
   files:
@@ -74,7 +74,7 @@ training:
   loss: kl
   learning_rate: 0.005
   adjust_lr_every: 24
-  export_every: 10
+  export_every: 5
   load_epoch: 0
 retraining:
   load_epoch: 5
@@ -96,7 +96,7 @@ time:
   start: ""
   end: ""
 paths:
-  data: /mnt/raphael/ModelNet10/
+  data: /mnt/raphael/
   out_dir: /mnt/raphael/ModelNet10_out/dgnn/scan4_noreg_gc/
 regularization:
   cell_reg_type: vol
