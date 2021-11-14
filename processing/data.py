@@ -322,17 +322,13 @@ class dataLoader:
     def run(self, d):
 
         self.path = d["path"]
+        self.filename = d["filename"]
         self.category = d["category"]
         self.id = d["id"]
         self.scan_conf = d["scan_conf"]
 
-        if(self.clf.data.dataset == "ModelNet10"):
-            self.basefilename = os.path.join(self.path, self.category, "gt", self.scan_conf, self.id, self.category+"_"+self.id)
-        elif(self.clf.data.dataset == "reconbench"):
-            self.basefilename = os.path.join(self.clf.paths.data, self.category, "gt", self.id+"_"+self.scan_conf)
-        else:
-            print("NOT IMPLEMENTED ERROR: loading of {} dataset!".format(self.clf.data.dataset))
-            sys.exit(1)
+        self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
+
 
         # read vertex features and labels
         self.readNodeData()

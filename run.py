@@ -10,7 +10,7 @@ import surfaceNetStaticEdgeFilters as efsage
 import runModel as rm
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'generation'))
 import generate_mesh as gm
-sys.path.append(os.path.join(os.path.dirname(__file__), '', 'data'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '', 'processing'))
 from dataset import reduceDataset, getDataset
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'utils'))
 from log import Logger
@@ -46,10 +46,6 @@ def training(clf):
 
 
     print("\nLoaded graphs:")
-    if(clf.data.dataset == 'shapenet'):
-        print("\t-confs {}: {}".format(clf.data.scan_confs, clf.temp.total_shapes_per_conf))
-    elif(clf.data.dataset == 'myshapenet'):
-        print("\t-confs {}: {}".format(clf.data.scan_confs, clf.temp.total_shapes_per_class))
     num_nodes = my_loader.getInfo()
     num_train_nodes = int(num_nodes * clf.training.data_percentage)
     train_mask, test_mask = reduceDataset(num_nodes, clf.training.data_percentage)
@@ -199,7 +195,7 @@ def prepareSample(clf, file):
 
 
     torch_dataset = Data(x=my_loader.features, y=my_loader.gt, edge_index=my_loader.edge_lists,
-                   edge_attr=my_loader.edge_features, category=my_loader.category, id=my_loader.id, scan_conf=my_loader.scan_conf)
+                   edge_attr=my_loader.edge_features, path=my_loader.path, category=my_loader.category, id=my_loader.id, scan_conf=my_loader.scan_conf)
 
     if(not clf.model.edge_convs and clf.graph.self_loops):
         torch_dataset.edge_index = add_self_loops(torch_dataset.edge_index)[0]
@@ -283,8 +279,6 @@ if __name__ == "__main__":
     clf.best_iou = 0
 
 
-
-
     ################# print time before training/classification #################
     clf.temp.start = datetime.datetime.now()
     print(clf.temp.start)
@@ -293,34 +287,22 @@ if __name__ == "__main__":
     print("SAVE CONFIG TO ", clf.files.config)
 
     ############ TRAINING #############
-    clf.temp.mode = "training"
-    clf.training.path = os.path.join(clf.paths.data,clf.training.dataset)
-    clf.validation.path = os.path.join(clf.paths.data,clf.validation.dataset)
-    clf.data.dataset = clf.training.dataset
-    clf.data.classes = clf.training.classes
-    clf.data.scan_confs = clf.training.scan_confs
-    clf.temp.shapes_per_conf_per_class = clf.training.shapes_per_conf_per_class
     if(args.training):
-        # save all training print outputs to the .log file below
+        # log output
         sys.stdout = Logger(os.path.join(clf.paths.out_dir, "log.txt"))
         clf.temp.logger = sys.stdout
-        getDataset(clf)  # dataset for learning, coming from .yaml
+        # save all training print outputs to the .log file below
+        getDataset(clf,clf.training.dataset,"training")
+        getDataset(clf,clf.validation.dataset,"validation")
         training(clf)
 
     ############ INFERENCE #############
-    clf.temp.mode = "inference"
-    clf.inference.path = os.path.join(clf.paths.data,clf.inference.dataset)
-    clf.data.dataset = clf.inference.dataset
-    clf.data.classes = clf.inference.classes
-    clf.data.scan_confs = clf.inference.scan_confs
-    getDataset(clf)
     clf.temp.memory = []
     clf.temp.inference_time = 0
     clf.temp.subgraph_time = 0
     if(args.inference):
         ############ INFERENCE #############
-        if (clf.inference.dataset == "eth3d"):
-            clf.paths.data = os.path.join(clf.temp.data_path, clf.temp.inference_file.split("/")[-3])
+        getDataset(clf, clf.inference.dataset, "inference")
         inference(clf)
 
 

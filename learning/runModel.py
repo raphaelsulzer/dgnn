@@ -407,23 +407,7 @@ class Trainer():
             data_inference.batch_gt = data_inference.y
 
             self.calcLossAndOA(logits_cell, logits_edge, data_inference, clf, clf.inference.metrics)
-            # clf.results.loss_test = clf.inference.metrics.getCellLoss()
-            # clf.results.OA_test = clf.inference.metrics.getOA()
 
-            # clf.results.loss_test = clf.inference.metrics.loss.cell.value()[0]
-            # clf.results.OA_test = clf.inference.metrics.OA * 100 / clf.inference.metrics.n_samples
-
-            # clf.results.loss_test = calcLossAndOA(model, logits_cell, logits_edge, data_inference_all, clf)
-            # clf.results.loss_test = clf.results.loss_test.item()
-            # print("Confusion matrix of {} cells:".format(len(data_inference_all.y)))
-            # print("pre_in, pre_out")
-            # print(clf.inference.metrics.confusion_matrix.CM)
-            # print("OA cells: ", clf.inference.metrics.confusion_matrix.overall_accuracy())
-            # clf.results.OA_test = float(clf.inference.metrics.confusion_matrix.overall_accuracy())
-
-
-            # print("OA cells: ", clf.results.OA_test)
-            # print("loss cells:", clf.results.loss_test)
         else:
             clf.results.OA_test = 0.0
 
