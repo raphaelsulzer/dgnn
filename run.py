@@ -112,7 +112,8 @@ def training(clf):
     if(clf.regularization.reg_epoch):
         print("\nApply regularization starting from epoch {}, with weight {}".format(clf.regularization.reg_epoch,clf.regularization.reg_weight))
     print("\nTrain for {} epochs with {} on gpu {}:\n".format(clf.training.epochs, clf.training.loss, clf.temp.args.gpu))
-    rm.train_test(model, data, clf)
+    trainer = rm.Trainer(model)
+    trainer.train_test(data, clf)
 
 
 
@@ -145,6 +146,8 @@ def inference(clf):
     model.load_state_dict(load(model_file))
     print("\nTurn of regularization for inference")
 
+    trainer = rm.Trainer(model)
+
     iou_all = 0; count = 0; loss = 0; weight = 0
     for clf.temp.inference_file in tqdm(clf.inference.files, ncols=50):
     # for clf.temp.inference_file in clf.inference.files:
@@ -160,7 +163,7 @@ def inference(clf):
                   .format(clf.graph.clique_sizes, clf.graph.num_hops, clf.temp.batch_size, clf.graph.self_loops))
 
 
-        prediction = rm.inference(model, data, subgraph_sampler, clf)
+        prediction = trainer.inference(data, subgraph_sampler, clf)
         # my_loader.exportScore(prediction)
 
         mesh, iou = gm.generate(data, prediction, clf)
