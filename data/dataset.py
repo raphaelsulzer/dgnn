@@ -24,21 +24,17 @@ def getDataset(clf):
 
     if (clf.data.dataset == "reconbench"):
 
-        clf.paths.data = "/home/raphael/data/reconbench/"
+        models = ["anchor", "daratech", "dc", "lordquas", "gargoyle"]
+        clf.inference.files = []
+        if(clf.temp.mode == "inference"):
+            for s in clf.data.scan_confs:
+                for m in models:
+                    clf.inference.files.append({"category":"","id":m,"scan_conf":str(s)})
+        else:
+            print("NOT IMPLEMENTED ERROR: can't train on reconbench dataset!")
+            sys.exit(1)
+        a=5
 
-        if(clf.temp.args.training):
-            for i,f in enumerate(clf.training.files):
-                clf.training.files[i] = os.path.join(clf.paths.data,"gt",f+"_lrtcs_0")
-
-
-        if (clf.inference.files[0] == "all"):
-            clf.inference.files = ["anchor", "gargoyle", "dc", "daratech", "lordquas"]
-        temp = []
-        for s in clf.inference.files:
-            for n in clf.data.scan_confs:
-                file=os.path.join(clf.paths.data,"gt",s + "_" + str(n) + "_lrtcs_0")
-                temp.append(file)
-        clf.temp.inference_files = temp
 
     elif(clf.data.dataset == "modelnet"):
 
@@ -53,42 +49,43 @@ def getDataset(clf):
         temp = []
         if(clf.inference.files is not None):
             for f in clf.inference.files:
-                t = f.split('_')
-                temp.append({"category":t[0],"id":t[1]})
-            clf.inference.files = temp
+                for s in clf.data.scan_confs:
+                    t = f.split('_')
+                    temp.append({"category":t[0],"id":t[1],"scan_conf":str(s)})
+                clf.inference.files = temp
             return
         else:
             clf.inference.files = []
 
         for c in classes:
+            for s in clf.data.scan_confs:
+                if(clf.temp.mode == "training"):
+                    models = os.listdir(os.path.join(clf.paths.data,c,"train"))
+                    models = models[:clf.training.shapes_per_conf_per_class]
+                    for m in models:
+                        if os.path.isfile(os.path.join(clf.paths.data,c,"2_watertight",m)):
+                            n = re.split(r'[_.]+',m)
+                            d = {"category":n[0],"id":n[1],"scan_conf":str(s)}
+                            clf.training.files.append(d)
 
-            if(clf.temp.mode == "training"):
-                models = os.listdir(os.path.join(clf.paths.data,c,"train"))
-                models = models[:clf.training.shapes_per_conf_per_class]
-                for m in models:
-                    if os.path.isfile(os.path.join(clf.paths.data,c,"2_watertight",m)):
-                        n = re.split(r'[_.]+',m)
-                        d = {"category":n[0],"id":n[1]}
-                        clf.training.files.append(d)
-
-                models = os.listdir(os.path.join(clf.paths.data,c,"test"))
-                models = models[:clf.validation.shapes_per_conf_per_class]
-                for m in models:
-                    if os.path.isfile(os.path.join(clf.paths.data,c,"2_watertight",m)):
-                        n = re.split(r'[_.]+',m)
-                        d = {"category":n[0],"id":n[1]}
-                        clf.validation.files.append(d)
-            elif(clf.temp.mode == "inference"):
-                models = os.listdir(os.path.join(clf.paths.data,c,"train"))
-                models = models[:clf.inference.shapes_per_conf_per_class]
-                for m in models:
-                    if os.path.isfile(os.path.join(clf.paths.data,c,"2_watertight",m)):
-                        n = re.split(r'[_.]+',m)
-                        d = {"category":n[0],"id":n[1]}
-                        clf.inference.files.append(d)
-            else:
-                print("ERROR: not a valid method for getDataset.py")
-                sys.exit(1)
+                    models = os.listdir(os.path.join(clf.paths.data,c,"test"))
+                    models = models[:clf.validation.shapes_per_conf_per_class]
+                    for m in models:
+                        if os.path.isfile(os.path.join(clf.paths.data,c,"2_watertight",m)):
+                            n = re.split(r'[_.]+',m)
+                            d = {"category":n[0],"id":n[1],"scan_conf":str(s)}
+                            clf.validation.files.append(d)
+                elif(clf.temp.mode == "inference"):
+                    models = os.listdir(os.path.join(clf.paths.data,c,"train"))
+                    models = models[:clf.inference.shapes_per_conf_per_class]
+                    for m in models:
+                        if os.path.isfile(os.path.join(clf.paths.data,c,"2_watertight",m)):
+                            n = re.split(r'[_.]+',m)
+                            d = {"category":n[0],"id":n[1],"scan_conf":str(s)}
+                            clf.inference.files.append(d)
+                else:
+                    print("ERROR: not a valid method for getDataset.py")
+                    sys.exit(1)
 
 
         a=5

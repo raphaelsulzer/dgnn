@@ -323,21 +323,25 @@ class dataLoader:
 
         self.category = d["category"]
         self.id = d["id"]
+        self.scan_conf = d["scan_conf"]
 
-        self.basefilename = os.path.join(self.clf.paths.data, self.category, "gt", str(self.clf.data.scan_confs[0]), \
-                                         self.id, self.category+"_"+self.id)
+        if(self.clf.data.dataset == "modelnet"):
+            self.basefilename = os.path.join(self.clf.paths.data, self.category, "gt", self.scan_conf, self.id, self.category+"_"+self.id)
+        elif(self.clf.data.dataset == "reconbench"):
+            self.basefilename = os.path.join(self.clf.paths.data, self.category, "gt", self.id+"_"+self.scan_conf)
+        else:
+            print("NOT IMPLEMENTED ERROR: loading of {} dataset!".format(self.clf.data.dataset))
+            sys.exit(1)
 
         # read vertex features and labels
         self.readNodeData()
         # read adjacencies and edge features
-
         self.readAdjacencies()
-        # standardize all features
-
+        # read edge features
         if(self.read_edge_features):
             self.readEdgeData()
             assert(self.edge_lists.shape[1]==len(self.edge_features))
-
+        # standardize all features
         if(self.clf.features.scaling):
             self.standardizeFeatures()
 

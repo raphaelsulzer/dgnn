@@ -71,7 +71,7 @@ def graph_cut(labels,prediction,edges):
     gc.create_general_graph(edges.max()+1, 2)
     # data_cost = F.softmax(prediction, dim=-1)
     prediction[:, [0, 1]] = prediction[:, [1, 0]]
-    data_cost = (prediction*100).round()
+    data_cost = (prediction*10).round()
 
     data_cost = np.array(data_cost,dtype=int)
     ### append high cost for inside for infinite cell
@@ -79,7 +79,7 @@ def graph_cut(labels,prediction,edges):
     gc.set_data_cost(data_cost)
     smooth = (1 - np.eye(2)).astype(int)
     gc.set_smooth_cost(smooth)
-    gc.set_all_neighbors(edges[:,0],edges[:,1],np.ones(edges.shape[0],dtype=int)*100)
+    gc.set_all_neighbors(edges[:,0],edges[:,1],np.ones(edges.shape[0],dtype=int)*10)
 
     for i,l in enumerate(labels):
         gc.init_label_at_site(i,l)
@@ -102,24 +102,24 @@ def graph_cut(labels,prediction,edges):
 
 def generate(data, prediction, clf):
 
-
     labels = F.log_softmax(prediction[data.y[:, 4] == 0], dim=-1).argmax(1).numpy()
 
-
-
     ### reconstruction
-    mfile = os.path.join(clf.paths.data, data.category, "gt", str(clf.data.scan_confs[0]), \
-                         data.id, data.category + "_" + data.id + "_3dt.npz")
+    if(clf.data.dataset == "modelnet"):
+        mfile = os.path.join(clf.paths.data, data.category, "gt", str(clf.data.scan_confs[0]), data.id, data.category + "_" + data.id + "_3dt.npz")
+    elif(clf.data.dataset == "reconbench"):
+        mfile = os.path.join(clf.paths.data, data.category, "gt",  data.id + "_" + data.scan_conf + "_3dt.npz")
+    else:
+        print("NOT IMPLEMENTED ERROR: loading of {} dataset!".format(clf.data.dataset))
+        sys.exit(1)
+
+
     mdata = np.load(mfile)
     assert(len(labels)==len(mdata["tetrahedra"]))
 
     # take out all the infinite cells for the graph cut
     edges = mdata['nfacets']
 
-
-    # w/o gc 0.715
-    # with alpha=1 iou: 0.716
-    # with alpha=100 iou: 0.752
     if(clf.inference.graph_cut):
         mask = (edges >= 0).all(axis=1)
         gc_edges = edges[mask]
@@ -143,19 +143,9 @@ def generate(data, prediction, clf):
     if(clf.inference.fix_orientation):
         trimesh.repair.fix_normals(recon_mesh)
 
+    gt_file = os.path.join(clf.paths.data, data.category, "convonet", str(clf.data.scan_confs[0]), data.id,
+                           "points.npz")
 
-    ### gt_mesh
-    # gt_file = os.path.join(clf.paths.data, file.category, "2_watertight", file.category + "_" + file.id + ".off")
-    # gt_mesh = trimesh.load(gt_file, process=False)
-    # n_points_uniform = 10000
-    #
-    # boxsize = 1 + 0.1
-    # points = np.random.rand(n_points_uniform, 3)
-    # points = boxsize * (points - 0.5)
-    # gt_occ = check_mesh_contains(gt_mesh,points)
-    # recon_occ = check_mesh_contains(recon_mesh,points)
-
-    gt_file = os.path.join(clf.paths.data, data.category, "convonet", str(clf.data.scan_confs[0]), data.id, "points.npz")
     gt_data = np.load(gt_file)
 
     points = gt_data["points"]

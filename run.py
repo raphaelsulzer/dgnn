@@ -3,6 +3,7 @@ from shutil import copyfile
 import pandas as pd
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'learning'))
+import surfaceNet as sage
 import surfaceNetEdgePrediction as epsage
 import surfaceNetStaticEdgeFilters as efsage
 
@@ -192,7 +193,7 @@ def prepareSample(clf, file):
 
 
     torch_dataset = Data(x=my_loader.features, y=my_loader.gt, edge_index=my_loader.edge_lists,
-                   edge_attr=my_loader.edge_features, category=my_loader.category, id=my_loader.id)
+                   edge_attr=my_loader.edge_features, category=my_loader.category, id=my_loader.id, scan_conf=my_loader.scan_conf)
 
     if(not clf.model.edge_convs and clf.graph.self_loops):
         torch_dataset.edge_index = add_self_loops(torch_dataset.edge_index)[0]
@@ -217,15 +218,15 @@ def createModel(clf):
 
     if (clf.model.type == "sage" and clf.model.edge_prediction):
         model = epsage.SurfaceNet(clf=clf)
-    elif(clf.model.type == "sage" and not clf.model.edge_prediction):
+    elif(clf.model.type == "sage" and not clf.model.edge_prediction and clf.model.edge_convs):
         model = efsage.SurfaceNet(clf=clf)
     # elif (clf.model.type == "sage" and clf.model.edge_convs):
     #     if (clf.model.concatenate):
     #         model = cefsage.SurfaceNet(n_node_features=fs, clf=clf)
     #     else:
     #         model = efsage.SurfaceNet(n_node_features=fs, clf=clf)
-    # elif(clf.model.type == "sage" and not clf.model.edge_prediction and not clf.model.edge_features):
-    #     model = sage.SurfaceNet(n_node_features=fs, clf=clf)
+    elif(clf.model.type == "sage" and not clf.model.edge_prediction and not clf.model.edge_convs):
+        model = sage.SurfaceNet(clf=clf)
     else:
         print("\nERROR: {} is not a valid model_name".format(clf.model.type))
         sys.exit(1)
