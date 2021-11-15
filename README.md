@@ -52,13 +52,13 @@ python setup_libmesh_convonet.py build_ext --inplace
 
 ### Berger et al. dataset
 
-To reconstruct the Berger et al. [2] dataset with our pretrained model follow the instructions step-by-step.
+Reconstruct the Berger et al. [2] dataset from the scans used in the paper.
 
 1. Download and unzip the dataset in the `data` folder
 
 ```
-cd utils
-bash download_dataset.sh
+cd data
+bash download_reconbench.sh
 ```
 
 2. Reconstruct and evaluate the meshes
@@ -67,13 +67,24 @@ bash download_dataset.sh
 python run.py -i --config configs/reconbench.yaml
 ```
 
-### ETH3D scenes
+### ETH3D dataset
 
-To reconstruct all scenes from the ETH3D [3] dataset run
+Reconstruct all training scenes of the ETH3D [3] dataset from the MVS point clouds used in the paper.
+
+1. Download and unzip the dataset in the `data` folder
 
 ```
-python run.py -i --config configs/eth.yaml
+cd data
+bash download_eth3d.sh
 ```
+
+2. Reconstruct the meshes
+
+```
+python run.py -i --config configs/eth3d.yaml
+```
+
+To evaluate the results you can e.g. sample points on the meshes and use the [multi-view-evaluation](https://github.com/ETH3D/multi-view-evaluation) tool provided by the ETH3D dataset authors.
 
 ### Custom object or scene
 
