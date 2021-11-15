@@ -13,7 +13,7 @@ import subprocess as sp
 import pprint
 
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'generation'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'processing'))
 import generate_mesh as gm
 
 class ConfusionMatrix:
@@ -333,7 +333,7 @@ class Trainer():
                         iou+=temp[1]
                         # export one shape per class
                         if(i%clf.validation.shapes_per_conf_per_class == 0):
-                            temp[0].export(os.path.join(clf.paths.out_dir,"generation",d["category"]+"_"+d['id']+".ply"))
+                            temp[0].export(os.path.join(clf.paths.out_dir,"generation",d["filename"]+".ply"))
                         # keep track of metrics over all scenes
                         OA+= clf.inference.metrics.OA_sum; samples+=clf.inference.metrics.samples_sum
                         loss+= clf.inference.metrics.cell_sum; weight+=clf.inference.metrics.weight_sum
@@ -341,7 +341,7 @@ class Trainer():
 
                     re = reg/edges if (reg>0.0 and edges>0.0) else float("nan")
 
-                    iou = iou*100/len(data.validation)
+                    iou = iou*100/len(data.validation.all)
                     if(iou > clf.best_iou):
                         clf.best_iou = iou
                         model_path = os.path.join(clf.paths.out_dir,"model_best.ptm")

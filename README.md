@@ -36,209 +36,117 @@ git clone git@github.com:raphaelsulzer/dgnn.git
 cd dgnn
 ```
 
-2. Create an anaconda environment called `dgnn` using
+2. Create an anaconda environment called `dgnn`
 ```
 conda env create -f environment.yaml
 conda activate dgnn
 ```
 
-3. Compile the extension module `libmesh` (taken from [Convolutional Occupancy Networks](https://github.com/autonomousvision/convolutional_occupancy_networks))
+3. Compile the extension module `libmesh` (taken from [Convolutional Occupancy Networks](https://github.com/autonomousvision/convolutional_occupancy_networks) [1])
 ```
 cd utils
 python setup_libmesh_convonet.py build_ext --inplace
 ```
 
-[comment]: <> (## Demo)
+## Mesh reconstruction using our pretrained model
 
-[comment]: <> (First, run the script to get the demo data:)
+### Berger et al. dataset
 
-[comment]: <> (```)
+To reconstruct the Berger et al. [2] dataset with our pretrained model follow the instructions step-by-step.
 
-[comment]: <> (bash scripts/download_demo_data.sh)
+1. Download and unzip the dataset in the `data` folder
 
-[comment]: <> (```)
+```
+cd utils
+bash download_dataset.sh
+```
 
-[comment]: <> (### Reconstruct Large-Scale Matterport3D Scene)
+2. Reconstruct and evaluate the meshes
 
-[comment]: <> (You can now quickly test our code on the real-world scene shown in the teaser. To this end, simply run:)
+```
+python run.py -i --config configs/reconbench.yaml
+```
 
-[comment]: <> (```)
+### ETH3D scenes
 
-[comment]: <> (python generate.py configs/pointcloud_crop/demo_matterport.yaml)
+To reconstruct all scenes from the ETH3D [3] dataset run
 
-[comment]: <> (```)
+```
+python run.py -i --config configs/eth.yaml
+```
 
-[comment]: <> (This script should create a folder `out/demo_matterport/generation` where the output meshes and input point cloud are stored.)
+### Custom object or scene
 
-[comment]: <> (**Note**: This experiment corresponds to our **fully convolutional model**, which we train only on the small crops from our synthetic room dataset. This model can be directly applied to large-scale real-world scenes with real units and generate meshes in a sliding-window manner, as shown in the [teaser]&#40;media/teaser_matterport.gif&#41;. More details can be found in section 6 of our [supplementary material]&#40;http://www.cvlibs.net/publications/Peng2020ECCV_supplementary.pdf&#41;. For training, you can use the script `pointcloud_crop/room_grid64.yaml`.)
+To reconstruct any object or scene from a point cloud you need a `pointcloud.npz` file.
+See `Custom dataset` for the structure of the file. Once you have the `pointcloud.npz` file run.
 
+```
+python run.py -i --config configs/default.yaml --file path/to/pointcloud.npz
+```
 
-[comment]: <> (### Reconstruct Synthetic Indoor Scene)
 
-[comment]: <> (<div style="text-align: center">)
 
-[comment]: <> (<img src="media/demo_syn_room.gif" width="600"/>)
+## Training
 
-[comment]: <> (</div>)
+Training a new model requires closed ground truth meshes. You can use the procedure explained 
+in `Custom dataset` to construct a new dataset from such meshes. Once you have created the dataset you need to
+add your dataset to the `getDataset()` function in `processing/dataset.py` and
+prepare a `custom.yaml` file (see `configs/reconbench.yaml` for an example). 
+The `.yaml` file also allows to change several model 
+parameters.
 
-[comment]: <> (You can also test on our synthetic room dataset by running: )
+To train a new model run
 
-[comment]: <> (```)
+```
+python run.py -t --config configs/custom.yaml
+```
 
-[comment]: <> (python generate.py configs/pointcloud/demo_syn_room.yaml)
 
-[comment]: <> (```)
+[comment]: <> (starting from an existing mesh &#40;see `scan`&#41; or from a)
+[comment]: <> (`pointcloud.npz` file &#40;see `feat`, omit `-g` flag&#41;.)
 
-[comment]: <> (## Dataset)
+## Custom dataset
 
-[comment]: <> (To evaluate a pretrained model or train a new model from scratch, you have to obtain the respective dataset.)
+To train or reconstruct a custom dataset you need to provide for each object or scene a `pointcloud.npz` file
+containing a `points`, `normals` and `sensor_position` field (see `data/reconbench/3_scan/` for examples of
+such files). The `normals` field is not actually used in this work but has to be present in the file. 
+It can e.g. be set to contain zero vectors. The datatype of all fields has to be `np.float64`.
+Furthermore you need several files containing the 3D Delaunay triangulation and feature information for each object
+or scene.
 
-[comment]: <> (In this paper, we consider 4 different datasets:)
+We provide prebuild binaries for Ubuntu 18.04 to synthetically scan a mesh, build a 3D Delaunay triangulation,
+and extract ground truth labels and features.
 
-[comment]: <> (### ShapeNet)
+1. Scan ground truth mesh
 
-[comment]: <> (You can download the dataset &#40;73.4 GB&#41; by running the [script]&#40;https://github.com/autonomousvision/occupancy_networks#preprocessed-data&#41; from Occupancy Networks. After, you should have the dataset in `data/ShapeNet` folder.)
+```
+cd utils
+./scan -w path/to/working_directory -i "" -g path/to/groundtruth_mesh/from/working_directory
+```
 
-[comment]: <> (### Synthetic Indoor Scene Dataset)
+Note that this uses our own scanning procedure and not the one from Berger et al. [2] 
+used in the paper.
 
-[comment]: <> (For scene-level reconstruction, we create a synthetic dataset of 5000)
+2. Extract labels and features
 
-[comment]: <> (scenes with multiple objects from ShapeNet &#40;chair, sofa, lamp, cabinet, table&#41;. There are also ground planes and randomly sampled walls.)
+```
+cd utils
+./feat -w path/to/working_directory -i "" -g path/to/groundtruth_mesh/from/working_directory
+```
 
-[comment]: <> (You can download our preprocessed data &#40;144 GB&#41; using)
+See e.g. `processing/reconbench/feat.py` and `processing/reconbench/scan.py` for examples
+to batch process all files in your dataset.
 
-[comment]: <> (```)
 
-[comment]: <> (bash scripts/download_data.sh)
+## References
 
-[comment]: <> (```)
+[1] PENG S., NIEMEYER M., MESCHEDER L., POLLEFEYS M.,
+GEIGER A.: Convolutional occupancy networks. In ECCV (2020).
 
-[comment]: <> (This script should download and unpack the data automatically into the `data/synthetic_room_dataset` folder.  )
+[2] BERGER M., LEVINE J. A., NONATO L. G., TAUBIN G.,
+SILVA C. T.: A benchmark for surface reconstruction. ACM Transaction on Graphics. (2013).
 
-[comment]: <> (**Note**: We also provide **point-wise semantic labels** in the dataset, which might be useful.)
-
-
-[comment]: <> (Alternatively, you can also preprocess the dataset yourself.)
-
-[comment]: <> (To this end, you can:)
-
-[comment]: <> (* download the ShapeNet dataset as described above.)
-
-[comment]: <> (* check `scripts/dataset_synthetic_room/build_dataset.py`, modify the path and run the code.)
-
-[comment]: <> (### Matterport3D)
-
-[comment]: <> (Download Matterport3D dataset from [the official website]&#40;https://niessner.github.io/Matterport/&#41;. And then, use `scripts/dataset_matterport/build_dataset.py` to preprocess one of your favorite scenes. Put the processed data into `data/Matterport3D_processed` folder.)
-
-[comment]: <> (### ScanNet)
-
-[comment]: <> (Download ScanNet v2 data from the [official ScanNet website]&#40;https://github.com/ScanNet/ScanNet&#41;.)
-
-[comment]: <> (Then, you can preprocess data with:)
-
-[comment]: <> (`scripts/dataset_scannet/build_dataset.py` and put into `data/ScanNet` folder.  )
-
-[comment]: <> (**Note**: Currently, the preprocess script normalizes ScanNet data to a unit cube for the comparison shown in the paper, but you can easily adapt the code to produce data with real-world metric. You can then use our fully convolutional model to run evaluation in a sliding-window manner.)
-
-[comment]: <> (## Usage)
-
-[comment]: <> (When you have installed all binary dependencies and obtained the preprocessed data, you are ready to run our pre-trained models and train new models from scratch.)
-
-[comment]: <> (### Mesh Generation)
-
-[comment]: <> (To generate meshes using a trained model, use)
-
-[comment]: <> (```)
-
-[comment]: <> (python generate.py CONFIG.yaml)
-
-[comment]: <> (```)
-
-[comment]: <> (where you replace `CONFIG.yaml` with the correct config file.)
-
-[comment]: <> (**Use a pre-trained model**  )
-
-[comment]: <> (The easiest way is to use a pre-trained model. You can do this by using one of the config files under the `pretrained` folders.)
-
-[comment]: <> (For example, for 3D reconstruction from noisy point cloud with our 3-plane model on the synthetic room dataset, you can simply run:)
-
-[comment]: <> (```)
-
-[comment]: <> (python generate.py configs/pointcloud/pretrained/room_3plane.yaml)
-
-[comment]: <> (```)
-
-[comment]: <> (The script will automatically download the pretrained model and run the generation. You can find the outputs in the `out/.../generation_pretrained` folders)
-
-[comment]: <> (Note that the config files are only for generation, not for training new models: when these configs are used for training, the model will be trained from scratch, but during inference our code will still use the pretrained model.)
-
-
-[comment]: <> (We provide the following pretrained models:)
-
-[comment]: <> (```)
-
-[comment]: <> (pointcloud/shapenet_1plane.pt)
-
-[comment]: <> (pointcloud/shapenet_3plane.pt)
-
-[comment]: <> (pointcloud/shapenet_grid32.pt)
-
-[comment]: <> (pointcloud/shapenet_3plane_partial.pt)
-
-[comment]: <> (pointcloud/shapenet_pointconv.pt)
-
-[comment]: <> (pointcloud/room_1plane.pt)
-
-[comment]: <> (pointcloud/room_3plane.pt)
-
-[comment]: <> (pointcloud/room_grid32.pt)
-
-[comment]: <> (pointcloud/room_grid64.pt)
-
-[comment]: <> (pointcloud/room_combine.pt)
-
-[comment]: <> (pointcloud/room_pointconv.pt)
-
-[comment]: <> (pointcloud_crop/room_grid64.pt)
-
-[comment]: <> (voxel/voxel_shapenet_1plane.pt)
-
-[comment]: <> (voxel/voxel_shapenet_3plane.pt)
-
-[comment]: <> (voxel/voxel_shapenet_grid32.pt)
-
-[comment]: <> (```)
-
-[comment]: <> (### Evaluation)
-
-[comment]: <> (For evaluation of the models, we provide the script `eval_meshes.py`. You can run it using:)
-
-[comment]: <> (```)
-
-[comment]: <> (python eval_meshes.py CONFIG.yaml)
-
-[comment]: <> (```)
-
-[comment]: <> (The script takes the meshes generated in the previous step and evaluates them using a standardized protocol. The output will be written to `.pkl/.csv` files in the corresponding generation folder which can be processed using [pandas]&#40;https://pandas.pydata.org/&#41;.)
-
-[comment]: <> (### Training)
-
-[comment]: <> (Finally, to train a new network from scratch, run:)
-
-[comment]: <> (```)
-
-[comment]: <> (python train.py CONFIG.yaml)
-
-[comment]: <> (```)
-
-[comment]: <> (For available training options, please take a look at `configs/default.yaml`.)
-
-[comment]: <> (## Further Information)
-
-[comment]: <> (Please also check out the following concurrent works that either tackle similar problems or share similar ideas:)
-
-[comment]: <> (- [[CVPR 2020] Jiang et al. - Local Implicit Grid Representations for 3D Scenes]&#40;https://arxiv.org/abs/2003.08981&#41;)
-
-[comment]: <> (- [[CVPR 2020] Chibane et al. Implicit Functions in Feature Space for 3D Shape Reconstruction and Completion]&#40;https://arxiv.org/abs/2003.01456&#41;)
-
-[comment]: <> (- [[ECCV 2020] Chabra et al. - Deep Local Shapes: Learning Local SDF Priors for Detailed 3D Reconstruction]&#40;https://arxiv.org/abs/2003.10983&#41;)
+[3] SCHÖPS T., SCHÖNBERGER J. L., GALLIANI S., SATTLER
+T., SCHINDLER K., POLLEFEYS M., GEIGER A.: A multi-view stereo
+benchmark with high-resolution images and multi-camera videos. In
+CVPR (2017).

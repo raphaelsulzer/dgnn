@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import os, sys
 import trimesh
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','utils'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
 from libmesh import check_mesh_contains
 import gco
 import torch.nn.functional as F
@@ -105,7 +105,7 @@ def generate(data, prediction, clf):
     labels = F.log_softmax(prediction[data.y[:, 4] == 0], dim=-1).argmax(1).numpy()
 
     ### reconstruction
-    mfile = os.path.join(data.path, "gt", data.scan_conf, data.id, data.category + "_" + data.id + "_3dt.npz")
+    mfile = os.path.join(data.path, "gt", data.scan_conf, data.id, data.filename + "_3dt.npz")
 
 
 
@@ -138,8 +138,7 @@ def generate(data, prediction, clf):
     if(clf.inference.fix_orientation):
         trimesh.repair.fix_normals(recon_mesh)
 
-    gt_file = os.path.join(data.path, "convonet", data.scan_conf, data.id,
-                           "points.npz")
+    gt_file = os.path.join(data.path, "convonet", data.scan_conf, data.category, "points.npz")
 
     gt_data = np.load(gt_file)
 
@@ -153,7 +152,7 @@ def generate(data, prediction, clf):
         recon_occ = check_mesh_contains(recon_mesh,points)
         iou = compute_iou(gt_occ, recon_occ)
     except:
-        iou = float("nan")
+        iou = 0.0
 
 
 

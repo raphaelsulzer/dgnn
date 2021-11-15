@@ -8,10 +8,9 @@ import surfaceNetEdgePrediction as epsage
 import surfaceNetStaticEdgeFilters as efsage
 
 import runModel as rm
-sys.path.append(os.path.join(os.path.dirname(__file__), '', 'generation'))
-import generate_mesh as gm
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'processing'))
 from dataset import reduceDataset, getDataset
+import generate_mesh as gm
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'utils'))
 from log import Logger
 import data as io
@@ -195,7 +194,7 @@ def prepareSample(clf, file):
 
 
     torch_dataset = Data(x=my_loader.features, y=my_loader.gt, edge_index=my_loader.edge_lists,
-                   edge_attr=my_loader.edge_features, path=my_loader.path, category=my_loader.category, id=my_loader.id, scan_conf=my_loader.scan_conf)
+                   edge_attr=my_loader.edge_features, path=my_loader.path, filename= my_loader.filename, category=my_loader.category, id=my_loader.id, scan_conf=my_loader.scan_conf)
 
     if(not clf.model.edge_convs and clf.graph.self_loops):
         torch_dataset.edge_index = add_self_loops(torch_dataset.edge_index)[0]

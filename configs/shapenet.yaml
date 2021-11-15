@@ -54,8 +54,8 @@ validation:
   dataset: reconbench
   classes: null
   scan_confs:
-    - -1
-  shapes_per_conf_per_class: 2
+    - 2
+  shapes_per_conf_per_class: 1
   batch_size: 0
   per_layer: 1
   graph_cut: true
@@ -64,16 +64,21 @@ training:
   dataset: ShapeNetManifoldPlus
   classes:
     - "02691156"
+    - "02828884"
+    - "02933112"
     - "03211117"
+    - "03691459"
   scan_confs:
-    - -1
-  data_percentage: 0.8
-  shapes_per_conf_per_class: 3
-  batch_size: 2048
+    - 2
+    - 3
+    - 4
+  data_percentage: 0.9
+  shapes_per_conf_per_class: 10
+  batch_size: 256
   epochs: 100
   loss: kl
   learning_rate: 0.005
-  adjust_lr_every: 24
+  adjust_lr_every: 16
   load_epoch: 0
   print_every: 1000
   val_every: 2000
@@ -89,7 +94,7 @@ model:
     - 128
     - 256
     - 256
-  edge_convs: 1
+  edge_convs: 0
   decoder: 2
   concatenate: 0 # whether to concatenate (or add) target to source node embedding
   edge_prediction: 0

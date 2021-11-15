@@ -1,7 +1,7 @@
 #!/bin/bash
 cd ../data
 echo "Start downloading ..."
-wget https://drive.google.com/file/d/1dNn91OUSxRKWabmkTu1b2SwGaGl0SeG1/view?usp=sharing
+gdown --id 1qO_Rm-8DAHqEuCmIypjFLlrCIX7Ib0mL
 unzip reconbench.zip
 rm reconbench.zip
 echo "Done!"
