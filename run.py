@@ -29,9 +29,9 @@ def training(clf):
 
     print("\n######## TRAINING MODEL ########")
 
-    #############################
-    ###### load train data ######
-    #############################
+    ####################################################################################################################
+    ########################################## load train data #########################################################
+    ####################################################################################################################
     all_graphs = [];
     my_loader = io.dataLoader(clf)
 
@@ -106,7 +106,7 @@ def training(clf):
         # res = clf.results_df.loc[clf.results_df['epoch'] == clf.training.load_epoch]
         # print(res)
         if (not os.path.isfile(model_file)):
-            print("\nERROR: The model {} does not exist. Check your path and the UUID of the model!".format(model_file))
+            print("\nERROR: The model {} does not exist. Check that you have set the correct path in data:out in the config file!".format(model_file))
             sys.exit(1)
         model.load_state_dict(load(model_file))
 

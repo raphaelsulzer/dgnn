@@ -329,17 +329,21 @@ class Trainer():
 
                     OA = 0;loss = 0;samples = 0;weight = 0;reg = 0;edges = 0; iou = 0;
                     for i,d in enumerate(tqdm(data.validation.all, ncols=50)):
-                        prediction = self.inference(d,[],clf)
-                        temp=gm.generate(d, prediction, clf)
-                        iou+=temp[1]
-                        # export one shape per class
-                        if(i%clf.validation.shapes_per_conf_per_class == 0):
-                            # my_loader.exportScore(prediction)
-                            temp[0].export(os.path.join(clf.paths.out,"generation",d["filename"]+".ply"))
-                        # keep track of metrics over all scenes
-                        OA+= clf.inference.metrics.OA_sum; samples+=clf.inference.metrics.samples_sum
-                        loss+= clf.inference.metrics.cell_sum; weight+=clf.inference.metrics.weight_sum
-                        reg+= clf.inference.metrics.reg_sum; edges+=clf.inference.metrics.edges_sum
+                        if(clf.validation.batch_size):
+                            prediction = self.inference(d,data.validation.batches[i],clf)
+                        else:
+                            prediction = self.inference(d,[],clf)
+                            temp=gm.generate(d, prediction, clf)
+                            iou+=temp[1]
+                            # export one shape per class
+                            if(i%clf.validation.shapes_per_conf_per_class == 0):
+                                # my_loader.exportScore(prediction)
+                                temp[0].export(os.path.join(clf.paths.out,"generation",d["filename"]+".ply"))
+                            # keep track of metrics over all scenes
+                            OA+= clf.inference.metrics.OA_sum; samples+=clf.inference.metrics.samples_sum
+                            reg+= clf.inference.metrics.reg_sum; edges+=clf.inference.metrics.edges_sum
+
+                        loss += clf.inference.metrics.cell_sum; weight += clf.inference.metrics.weight_sum
 
                     re = reg/edges if (reg>0.0 and edges>0.0) else float("nan")
 

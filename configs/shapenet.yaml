@@ -76,9 +76,6 @@ training:
   print_every: 1000
   val_every: 10000
   export_every: 20000
-retraining:
-  load_epoch: 5
-  additional_epochs: 4
 model:
   type: sage
   encoder: null

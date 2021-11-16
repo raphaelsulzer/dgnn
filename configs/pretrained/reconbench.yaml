@@ -70,11 +70,10 @@ training:
   loss: kl
   learning_rate: 0.005
   adjust_lr_every: 24
-  export_every: 10
   load_epoch: 0
-retraining:
-  load_epoch: 5
-  additional_epochs: 4
+  print_every: 1000
+  val_every: 2000
+  export_every: 10000
 model:
   type: sage
   encoder: null

@@ -174,21 +174,21 @@ def getDataset(clf,dataset,mode):
             clf.training.path, clf.training.classes, clf.training.scan_confs = getConfig(clf,clf.training)
             clf.training.files = []
 
-            models = np.loadtxt(os.path.join(clf.training.path, "train.lst"),dtype=str)
+            models = np.loadtxt(os.path.join(clf.training.path, "train.lst"),dtype=str)[:clf.validation.shapes_per_conf_per_class]
             for m in models:
                 if os.path.isfile(os.path.join(clf.training.path, "mesh", m+".off")):
-                    d = {"path": os.path.join(clf.training.path), "filename": m, "category": "", "id": m, "scan_conf": ""}
+                    d = {"path": os.path.join(clf.training.path), "filename": m, "category": m, "id": "", "scan_conf": ""}
                     clf.training.files.append(d)
 
         elif(mode == "validation"):
 
             clf.validation.path, clf.validation.classes, clf.validation.scan_confs = getConfig(clf,clf.validation)
             clf.validation.files = []
-            models = np.loadtxt(os.path.join(clf.training.path, "test.lst"),dtype=str)
+            models = np.loadtxt(os.path.join(clf.training.path, "test.lst"),dtype=str)[:clf.validation.shapes_per_conf_per_class]
             for m in models:
                 if os.path.isfile(os.path.join(clf.training.path, "mesh", m+".off")):
-                    d = {"path": os.path.join(clf.training.path), "filename": m, "category": "", "id": m, "scan_conf": ""}
-                    clf.training.files.append(d)
+                    d = {"path": os.path.join(clf.training.path), "filename": m, "category": m, "id": "", "scan_conf": ""}
+                    clf.validation.files.append(d)
 
         elif(mode == "inference"):
 
