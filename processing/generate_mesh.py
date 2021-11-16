@@ -12,13 +12,13 @@ from evaluate_mesh import compute_iou, compute_chamfer
 
 
 
-def graph_cut(labels,prediction,edges):
+def graph_cut(labels,prediction,edges,clf):
 
     gc = gco.GCO()
     gc.create_general_graph(edges.max()+1, 2)
     # data_cost = F.softmax(prediction, dim=-1)
     prediction[:, [0, 1]] = prediction[:, [1, 0]]
-    data_cost = (prediction*100).round()
+    data_cost = (prediction*clf.graph_cut.unary_weight).round()
 
     data_cost = np.array(data_cost,dtype=int)
     ### append high cost for inside for infinite cell
@@ -26,7 +26,13 @@ def graph_cut(labels,prediction,edges):
     gc.set_data_cost(data_cost)
     smooth = (1 - np.eye(2)).astype(int)
     gc.set_smooth_cost(smooth)
-    gc.set_all_neighbors(edges[:,0],edges[:,1],np.ones(edges.shape[0],dtype=int)*100)
+    if(not clf.graph_cut.binary_type):
+        edge_weight = np.ones(edges.shape[0],dtype=int)
+    else:
+        # TODO: retrieve the beta-skeleton and area value from the features to weight the binaries
+        edge_weight = np.ones(edges.shape[0], dtype=int)
+
+    gc.set_all_neighbors(edges[:,0],edges[:,1],edge_weight*clf.graph_cut.binary_weight)
 
     for i,l in enumerate(labels):
         gc.init_label_at_site(i,l)
@@ -61,11 +67,10 @@ def generate(data, prediction, clf):
 
     # take out all the infinite cells for the graph cut
     edges = mdata['nfacets']
-
     if(clf.temp.graph_cut):
         mask = (edges >= 0).all(axis=1)
         gc_edges = edges[mask]
-        labels=graph_cut(labels,prediction[data.y[:, 4] == 0],gc_edges)
+        labels=graph_cut(labels,prediction[data.y[:, 4] == 0],gc_edges,clf)
 
     # add a last cell as the infinite cell
     for i, e in enumerate(edges):
@@ -89,6 +94,9 @@ def generate(data, prediction, clf):
 
     ### watertight ###
     if("watertight" in clf.temp.eval):
+        # TODO: this does not really give the correct result as it seems to simply count boundary edges,
+        # which are also all non-manifold edges. Thus, if the mesh has any non-manifold edge, it will also be counted as non-watertight
+        # maybe use Open3D for this task instead, which has support for both, non-manifold and watertight.
         eval_dict["watertight"] = int(recon_mesh.is_watertight)
         # print("WARNING: Mesh is not watertight: ", data['filename'])
 

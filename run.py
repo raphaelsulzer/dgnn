@@ -99,7 +99,7 @@ def training(clf):
 
     if(clf.training.load_epoch):
         # load model
-        model_file = os.path.join(clf.paths.out_dir, "model_" + clf.training.load_epoch + ".ptm")
+        model_file = os.path.join(clf.paths.out, "model_" + clf.training.load_epoch + ".ptm")
         print("\nLoad existing model at epoch ",clf.training.load_epoch)
         # # load old results df TODO: need to load it from the args.conf directory, not from the clf.files.config file!
         # clf.results_df = pd.read_csv(clf.files.results)
@@ -139,7 +139,7 @@ def inference(clf):
     ##############################
     ######### load model #########
     ##############################
-    model_file = os.path.join(clf.paths.out_dir,"model_"+str(clf.inference.model)+".ptm")
+    model_file = os.path.join(clf.paths.out,"model_"+str(clf.inference.model)+".ptm")
     print("\nLOAD MODEL {}\n".format(model_file))
     model = createModel(clf)
     model.to(clf.temp.device)
@@ -173,14 +173,13 @@ def inference(clf):
         prediction = trainer.inference(data, subgraph_sampler, clf)
         # my_loader.exportScore(prediction)
         results_dict["loss"].loc[results_dict["loss"].index[int(data["scan_conf"])], data["category"]] = clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum
-
         mesh, eval_dict = gm.generate(data, prediction, clf)
         # print("Mesh {} : IoU {} - Loss {}".format(data["filename"],iou,clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum))
         for key,value in eval_dict.items():
             results_dict[key].loc[results_dict[key].index[int(data["scan_conf"])], data["category"]] = value
 
         # export one shape per class
-        mesh.export(os.path.join(clf.paths.out_dir, "generation", data["filename"]+".ply"))
+        mesh.export(os.path.join(clf.paths.out, "generation", data["filename"]+".ply"))
 
     for key, value in results_dict.items():
         value["mean"] = value.mean(numeric_only=False, axis=1)
@@ -253,7 +252,7 @@ if __name__ == "__main__":
                         help='do training')
     parser.add_argument('-i', '--inference', action='store_true',
                         help='do inference after training')
-    parser.add_argument('-c', '--conf', type=str, default="../configs/debug.yaml",
+    parser.add_argument('-c', '--conf', type=str, default="../configs/pretrained/reconbench.yaml",
                         help='which config to load')
     parser.add_argument('--gpu', type=int, default=0,
                         help='on which gpu device [0,1] to train. default: 0')
@@ -271,15 +270,21 @@ if __name__ == "__main__":
     clf.files = Munch()
     clf.temp.args = args
 
+    ### adjust paths to current working_dir if they are relative
+    if(not os.path.isabs(clf.paths.out)):
+        clf.paths.out = os.path.join(os.path.dirname(__file__),clf.paths.out)
+    if(not os.path.isabs(clf.paths.data)):
+        clf.paths.data = os.path.join(os.path.dirname(__file__),clf.paths.data)
+
 
     ################# create the model dir #################
-    if(not os.path.exists(os.path.join(clf.paths.out_dir,"generation"))):
-        os.makedirs(os.path.join(clf.paths.out_dir,"generation"))
-    if(not os.path.exists(os.path.join(clf.paths.out_dir,"prediction"))):
-        os.makedirs(os.path.join(clf.paths.out_dir,"prediction"))
-    # save conf file to out_dir
-    clf.files.config = os.path.join(clf.paths.out_dir,"config.yaml")
-    clf.files.results = os.path.join(clf.paths.out_dir,"results.csv")
+    if(not os.path.exists(os.path.join(clf.paths.out,"generation"))):
+        os.makedirs(os.path.join(clf.paths.out,"generation"))
+    if(not os.path.exists(os.path.join(clf.paths.out,"prediction"))):
+        os.makedirs(os.path.join(clf.paths.out,"prediction"))
+    # save conf file to out
+    clf.files.config = os.path.join(clf.paths.out,"config.yaml")
+    clf.files.results = os.path.join(clf.paths.out,"results.csv")
     if(not os.path.isfile(clf.files.config)):
         copyfile(args.conf,clf.files.config)
     # create the results df
@@ -298,7 +303,7 @@ if __name__ == "__main__":
     if(args.training):
         clf.temp.graph_cut = clf.validation.graph_cut; clf.temp.fix_orientation = clf.validation.fix_orientation; clf.temp.eval = clf.validation.eval
         # log output
-        sys.stdout = Logger(os.path.join(clf.paths.out_dir, "log.txt"))
+        sys.stdout = Logger(os.path.join(clf.paths.out, "log.txt"))
         clf.temp.logger = sys.stdout
         # save all training print outputs to the .log file below
         getDataset(clf,clf.training.dataset,"training")

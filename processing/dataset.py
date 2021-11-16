@@ -101,7 +101,6 @@ def getDataset(clf,dataset,mode):
 
     elif(dataset == "ShapeNetManifoldPlus"):
 
-        # TODO: this code should be simplified, because it is basically repeated for training, validation and inference mode
         if (mode == "training"):
 
             clf.training.path, clf.training.classes, clf.training.scan_confs = getConfig(clf, clf.training)
@@ -169,8 +168,58 @@ def getDataset(clf,dataset,mode):
             clf.temp.inference_files.append(os.path.join("/mnt/raphael/ETH3D", scene, "gt", scene+"_lrt_0"))
 
     elif(dataset == "aerial"):
-        print("NOT IMPLEMENTED ERROR: aerial dataset!")
-        sys.exit(1)
+
+        if(mode == "training"):
+
+            clf.training.path, clf.training.classes, clf.training.scan_confs = getConfig(clf,clf.training)
+            clf.training.files = []
+
+            models = np.loadtxt(os.path.join(clf.training.path, "train.lst"),dtype=str)
+            for m in models:
+                if os.path.isfile(os.path.join(clf.training.path, "mesh", m+".off")):
+                    d = {"path": os.path.join(clf.training.path), "filename": m, "category": "", "id": m, "scan_conf": ""}
+                    clf.training.files.append(d)
+
+        elif(mode == "validation"):
+
+            clf.validation.path, clf.validation.classes, clf.validation.scan_confs = getConfig(clf,clf.validation)
+            clf.validation.files = []
+            models = np.loadtxt(os.path.join(clf.training.path, "test.lst"),dtype=str)
+            for m in models:
+                if os.path.isfile(os.path.join(clf.training.path, "mesh", m+".off")):
+                    d = {"path": os.path.join(clf.training.path), "filename": m, "category": "", "id": m, "scan_conf": ""}
+                    clf.training.files.append(d)
+
+        elif(mode == "inference"):
+
+            clf.inference.path, clf.inference.classes, clf.inference.scan_confs = getConfig(clf,clf.inference)
+
+            temp = []
+            if(clf.inference.files is not None):
+                for f in clf.inference.files:
+                    for s in clf.data.scan_confs:
+                        n = f.split('_')
+                        temp.append({"path": os.path.join(clf.inference.path,n[0]), "filename": n[0]+"_"+n[1], "category":n[0],"id":n[1],"scan_conf":str(s)})
+                    clf.inference.files = temp
+                return
+            else:
+                clf.inference.files = []
+                for c in clf.inference.classes:
+                    for s in clf.data.scan_confs:
+                        models = os.listdir(os.path.join(clf.inference.path,c,"test"))
+                        models = models[:clf.inference.shapes_per_conf_per_class]
+                        for m in models:
+                            if os.path.isfile(os.path.join(clf.inference.path,c,"2_watertight",m)):
+                                n = re.split(r'[_.]+',m)
+                                d = {"path": os.path.join(clf.inference.path,n[0]),"category":n[0],"id":n[1],"scan_conf":str(s)}
+                                clf.inference.files.append(d)
+        else:
+            print("ERROR: not a valid method for getDataset.py")
+            sys.exit(1)
+
+
+        a=5
+
 
     else:
         print("{} is not a valid dataset".format(clf.data.dataset))

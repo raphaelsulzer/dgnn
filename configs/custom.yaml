@@ -26,65 +26,63 @@ features:
   node_normalization_feature: null
   edge_normalization_feature: null
 graph:
-  num_hops: 2 # outer hops (unsupervised) == num_layers
+  num_hops: 4 # outer hops (unsupervised) == num_layers
   additional_num_hops: 1 # inner hops (supervised), this is there for having a supervised connected component, if set to 0, only the last layer of num_hops is supervised in the form of unconnected nodes
   clique_sizes: # -1 meaning sample all existing nodes
     - -1
   self_loops: 0
 inference:
-  dataset: ModelNet10
+  dataset: # name of your dataset here
   classes: null
+  shapes_per_conf_per_class: 1
   files: null
   scan_confs:
-    - 4
+    - -1
+  batch_size: 0
+  per_layer: 1
+  has_label: 0
   model: best
-  batch_size: 0   # also for validation
-  per_layer: 1    # also for validation
-  has_label: 1
   graph_cut: true
   fix_orientation: true
+  eval: ["iou","chamfer"]
 validation:
-  dataset: ModelNet10
-  classes:
-    - "table"
-    - "toilet"
-  shapes_per_conf_per_class: 2
+  dataset: reconbench
+  shapes_per_conf_per_class: 20
   scan_confs:
     - 4
-  batch_size: 0   # also for validation
-  per_layer: 1    # also for validation
+  batch_size: 0
+  per_layer: 1
+  val_every: 2
+  graph_cut: true
+  fix_orientation: true
+  eval: [ "iou","chamfer"]
 training:
-  dataset: ModelNet10
-  classes:
-    - "bathtub"
-    - "bed"
-    - "chair"
-    - "desk"
-    - "dresser"
-    - "monitor"
-    - "nightstand"
-    - "sofa"
-  data_percentage: 0.9
-  shapes_per_conf_per_class: 2
+  dataset: modelnet
+  classes: null
+  data_percentage: 0.8
+  shapes_per_conf_per_class: 10
   scan_confs:
     - 4
   files:
     - null
-  batch_size: 128
-  epochs: 21
+  batch_size: 2048
+  epochs: 100
   loss: kl
   learning_rate: 0.005
-  adjust_lr_every: 16
+  adjust_lr_every: 24
+  export_every: 10
   load_epoch: 0
-  print_every: 1000
-  val_every: 2000
-  export_every: 5000
+retraining:
+  load_epoch: 5
+  additional_epochs: 4
 model:
   type: sage
   encoder: null
   convs: # specify the OUT channels of sage convs
-    - 32
     - 64
+    - 128
+    - 128
+    - 128
   edge_convs: 1
   decoder: 2
   concatenate: 0 # whether to concatenate (or add) target to source node embedding
@@ -94,14 +92,19 @@ time:
   start: ""
   end: ""
 paths:
-  data: /mnt/raphael/
-  out_dir: /mnt/raphael/ModelNet10_out/dgnn/debug/
+  data: # path to your data, your dataset name will be appended automatically
+  out: data/models/kf96   # also where the model is stored
 regularization:
   cell_reg_type: vol
-  reg_weight: 0.25
+  reg_weight: 0.4
   reg_type: null
   reg_epoch: null
   shape_weight_batch_normalization: 1
   inside_outside_weight:
     - 1.0
     - 1.0
+graph_cut:
+  unary_weight: 100
+  unary_type: logits
+  binary_weight: 100
+  binary_type: beta

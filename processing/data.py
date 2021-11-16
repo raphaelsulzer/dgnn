@@ -231,6 +231,7 @@ class dataLoader:
         files.append(open(self.basefilename+"_adjacency_ji.txt", 'r'))
 
         # TODO: this could be sped up, because I'm still reading as string and converting to int later
+        # furthermore the _3dt.npz file could be used instead, but would need to be updated to also include infinite cells
         self.edge_lists = []
         for f in files:
             # skip header line
@@ -348,7 +349,7 @@ class dataLoader:
 
     def exportScore(self, prediction):
 
-        outpath =  os.path.join(self.clf.paths.out_dir,"prediction")
+        outpath =  os.path.join(self.clf.paths.out,"prediction")
         if(self.verbosity):
             print("Export predictions to: ", outpath)
 

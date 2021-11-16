@@ -95,7 +95,7 @@ time:
   end: ""
 paths:
   data: /mnt/raphael/
-  out_dir: /mnt/raphael/reconbench_out/shapenet/
+  out: /mnt/raphael/reconbench_out/shapenet/
 regularization:
   cell_reg_type: vol
   reg_weight: 0.4

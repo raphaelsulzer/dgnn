@@ -52,7 +52,7 @@ python setup_libmesh_convonet.py build_ext --inplace
 
 ### Berger et al. dataset
 
-Reconstruct the Berger et al. [2] dataset from the scans used in the paper.
+Reconstruct the Berger et al. [2] dataset from the scans used in our paper.
 
 1. Download and unzip the dataset in the `data` folder
 
@@ -64,35 +64,43 @@ bash download_reconbench.sh
 2. Reconstruct and evaluate the meshes
 
 ```
-python run.py -i --config configs/reconbench.yaml
+python run.py -i --config configs/pretrained/reconbench.yaml
 ```
 
-### ETH3D dataset
+[comment]: <> (### ETH3D dataset)
 
-Reconstruct all training scenes of the ETH3D [3] dataset from the MVS point clouds used in the paper.
+[comment]: <> (Reconstruct all training scenes of the ETH3D [3] dataset from the MVS point clouds used in the paper.)
 
-1. Download and unzip the dataset in the `data` folder
+[comment]: <> (1. Download and unzip the dataset in the `data` folder)
 
-```
-cd data
-bash download_eth3d.sh
-```
+[comment]: <> (```)
 
-2. Reconstruct the meshes
+[comment]: <> (cd data)
 
-```
-python run.py -i --config configs/eth3d.yaml
-```
+[comment]: <> (bash download_eth3d.sh)
 
-To evaluate the results you can e.g. sample points on the meshes and use the [multi-view-evaluation](https://github.com/ETH3D/multi-view-evaluation) tool provided by the ETH3D dataset authors.
+[comment]: <> (```)
+
+[comment]: <> (2. Reconstruct the meshes)
+
+[comment]: <> (```)
+
+[comment]: <> (python run.py -i --config configs/eth3d.yaml)
+
+[comment]: <> (```)
+
+[comment]: <> (To evaluate the results you can e.g. sample points on the meshes and use the [multi-view-evaluation]&#40;https://github.com/ETH3D/multi-view-evaluation&#41; tool provided by the ETH3D dataset authors.)
 
 ### Custom object or scene
 
 To reconstruct any object or scene from a point cloud you need a `pointcloud.npz` file.
-See `Custom dataset` for the structure of the file. Once you have the `pointcloud.npz` file run.
+See `Custom dataset` for the structure of the file. 
+Additionally you need to adjust the `configs/custom.yaml` file to point to your dataset.
+
+Once you have everything set up run
 
 ```
-python run.py -i --config configs/default.yaml --file path/to/pointcloud.npz
+python run.py -i --config configs/custom.yaml
 ```
 
 
@@ -103,8 +111,7 @@ Training a new model requires closed ground truth meshes. You can use the proced
 in `Custom dataset` to construct a new dataset from such meshes. Once you have created the dataset you need to
 add your dataset to the `getDataset()` function in `processing/dataset.py` and
 prepare a `custom.yaml` file (see `configs/reconbench.yaml` for an example). 
-The `.yaml` file also allows to change several model 
-parameters.
+The `.yaml` file also allows to change several model parameters.
 
 To train a new model run
 
@@ -132,20 +139,24 @@ and extract ground truth labels and features.
 
 ```
 cd utils
-./scan -w path/to/working_directory -i "" -g path/to/groundtruth_mesh/from/working_directory
+./scan -w path/to/working_directory -i "" -o output_filename -g mesh_to_scan_filename --export npz
 ```
 
+There are several other options, such as the number of cameras or noise. You can see all available options by running
+```
+./scan --help
+```
 Note that this uses our own scanning procedure and not the one from Berger et al. [2] 
-used in the paper.
+used in our paper.
 
 2. Extract labels and features
 
 ```
 cd utils
-./feat -w path/to/working_directory -i "" -g path/to/groundtruth_mesh/from/working_directory
+./feat -w path/to/working_directory -i input_filename.npz -o output_filename -g groundtruth_mesh_filename -s npz
 ```
 
-See e.g. `processing/reconbench/feat.py` and `processing/reconbench/scan.py` for examples
+See `processing/reconbench/feat.py` and `processing/reconbench/scan.py` for examples on how
 to batch process all files in your dataset.
 
 

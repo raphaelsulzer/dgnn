@@ -335,7 +335,7 @@ class Trainer():
                         # export one shape per class
                         if(i%clf.validation.shapes_per_conf_per_class == 0):
                             # my_loader.exportScore(prediction)
-                            temp[0].export(os.path.join(clf.paths.out_dir,"generation",d["filename"]+".ply"))
+                            temp[0].export(os.path.join(clf.paths.out,"generation",d["filename"]+".ply"))
                         # keep track of metrics over all scenes
                         OA+= clf.inference.metrics.OA_sum; samples+=clf.inference.metrics.samples_sum
                         loss+= clf.inference.metrics.cell_sum; weight+=clf.inference.metrics.weight_sum
@@ -346,7 +346,7 @@ class Trainer():
                     iou = iou*100/len(data.validation.all)
                     if(iou > clf.best_iou):
                         clf.best_iou = iou
-                        model_path = os.path.join(clf.paths.out_dir,"model_best.ptm")
+                        model_path = os.path.join(clf.paths.out,"model_best.ptm")
                         torch.save(self.model.state_dict(), model_path)
 
                     ## save everything in the dataframe
@@ -361,9 +361,9 @@ class Trainer():
                     clf.results_df.to_csv(clf.files.results,index=False)
 
 
-                # save model every 10 epochs
+                # save model
                 if (iterations % clf.training.export_every) == 0:
-                    model_path = os.path.join(clf.paths.out_dir, "model_"+str(int(current_epoch))+".ptm")
+                    model_path = os.path.join(clf.paths.out, "model_"+str(int(current_epoch))+".ptm")
                     print(EXPORTCOLOR)
                     print('[{}] Epoch {} -> Export model to {}'.format(iterations, current_epoch, model_path))
                     print(NORMALCOLOR)
