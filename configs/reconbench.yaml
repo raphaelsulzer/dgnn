@@ -33,23 +33,18 @@ graph:
   self_loops: 0
 inference:
   dataset: reconbench
-  shapes_per_conf_per_class: 10
   classes: null
+  shapes_per_conf_per_class: 1
   files: null
-#    - monitor_0130
-#    - table_0079
-#    - chair_0260
-#    - monitor_0527
-#    - table_0440
-#    - chair_0949
   scan_confs:
-    - 4
+    - -1
   batch_size: 0   # also for validation
   per_layer: 1    # also for validation
   has_label: 1
-  model: 20
+  model: 12
   graph_cut: true
-  fix_orientation: false
+  fix_orientation: true
+  eval: ["iou","chamfer","watertight"]
 validation:
   dataset: reconbench
   shapes_per_conf_per_class: 20
@@ -60,6 +55,7 @@ validation:
   val_every: 2
   graph_cut: true
   fix_orientation: true
+  eval: [ "iou","chamfer","watertight" ]
 training:
   dataset: modelnet
   classes: null
@@ -85,9 +81,9 @@ model:
   convs: # specify the OUT channels of sage convs
     - 64
     - 128
-    - 256
-    - 256
-  edge_convs: 0
+    - 128
+    - 128
+  edge_convs: 1
   decoder: 2
   concatenate: 0 # whether to concatenate (or add) target to source node embedding
   edge_prediction: 0
@@ -96,8 +92,8 @@ time:
   start: ""
   end: ""
 paths:
-  data: /mnt/raphael/reconbench/
-  out_dir: /mnt/raphael/reconbench_out/720h/
+  data: /mnt/raphael/
+  out_dir: /mnt/raphael/reconbench_out/dgnn/kf96
 regularization:
   cell_reg_type: vol
   reg_weight: 0.4

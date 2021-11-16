@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from shutil import copyfile
-
+from datetime import datetime
 import numpy as np
 from sklearn.metrics import confusion_matrix
 
@@ -313,9 +313,10 @@ class Trainer():
                 row['train_OA'] = clf.training.metrics.getOA()
 
                 if(iterations % clf.training.print_every) == 0 or iterations == 1:
-
-                    print('[%3d] Epoch %3d -> Train Loss (cell): %1.4f,  Train Loss (reg): %1.4f, Train OA: %3.2f%%'
-                        % (iterations, current_epoch,
+                    time=datetime.now()
+                    time=time.strftime("[%H:%M:%S]")
+                    print('%s[%3d] Epoch %3d -> Train Loss (cell): %1.4f,  Train Loss (reg): %1.4f, Train OA: %3.2f%%'
+                        % (time,iterations, current_epoch,
                            clf.training.metrics.getCellLoss(),
                            clf.training.metrics.getRegLoss(),
                            clf.training.metrics.getOA()))
@@ -333,6 +334,7 @@ class Trainer():
                         iou+=temp[1]
                         # export one shape per class
                         if(i%clf.validation.shapes_per_conf_per_class == 0):
+                            # my_loader.exportScore(prediction)
                             temp[0].export(os.path.join(clf.paths.out_dir,"generation",d["filename"]+".ply"))
                         # keep track of metrics over all scenes
                         OA+= clf.inference.metrics.OA_sum; samples+=clf.inference.metrics.samples_sum

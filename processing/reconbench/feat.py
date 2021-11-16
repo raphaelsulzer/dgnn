@@ -15,7 +15,8 @@ def main(args):
                "-i", str(args.i),
                "-o", str(args.o),
                "-g", str(args.g),
-               "-s", "npz"]
+               "-s", "npz",
+               "e", ""]
     print("run command: ", command)
     p = subprocess.Popen(command)
     p.wait()
@@ -51,9 +52,20 @@ if __name__ == "__main__":
     for i in args.input:
         args.wdir = os.path.join(args.dataset_dir)
         args.i = os.path.join("3_scan",i)
-        args.o = i.split('.')[0]
-        args.g = "watertight/"+i.split('_')[0]+".off"
+        name = i.split('.')[0]
+        conf = name.split('_')[1]
+        args.o = name
+        args.g = "2_watertight/"+i.split('_')[0]+".off"
         main(args)
+
+        # move
+        in_dir = os.path.join(args.dataset_dir, "gt", name + "*")
+        out_dir = os.path.join(args.dataset_dir, "gt", conf)
+        for f in glob.glob(in_dir):
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
+            p = subprocess.Popen(["mv", f, out_dir])
+            p.wait()
 
 
 

@@ -327,6 +327,7 @@ class dataLoader:
         self.id = d["id"]
         self.scan_conf = d["scan_conf"]
 
+        # self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
         self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
 
 

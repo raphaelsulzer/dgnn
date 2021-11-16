@@ -45,17 +45,27 @@ inference:
   fix_orientation: true
 validation:
   dataset: ModelNet10
-  classes: null
-  shapes_per_conf_per_class: 1
+  classes:
+    - "table"
+    - "toilet"
+  shapes_per_conf_per_class: 2
   scan_confs:
     - 4
   batch_size: 0   # also for validation
   per_layer: 1    # also for validation
 training:
   dataset: ModelNet10
-  classes: null
-  data_percentage: 0.2
-  shapes_per_conf_per_class: 1
+  classes:
+    - "bathtub"
+    - "bed"
+    - "chair"
+    - "desk"
+    - "dresser"
+    - "monitor"
+    - "nightstand"
+    - "sofa"
+  data_percentage: 0.9
+  shapes_per_conf_per_class: 2
   scan_confs:
     - 4
   files:
@@ -90,7 +100,7 @@ regularization:
   cell_reg_type: vol
   reg_weight: 0.25
   reg_type: null
-  reg_epoch: 3
+  reg_epoch: null
   shape_weight_batch_normalization: 1
   inside_outside_weight:
     - 1.0

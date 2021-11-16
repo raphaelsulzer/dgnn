@@ -39,7 +39,7 @@ if __name__ == "__main__":
                         help='The scan conf')
 
 
-    parser.add_argument('--category', type=str, default='nightstand',
+    parser.add_argument('--category', type=str, default=None,
                         help='Indicate the category class')
 
     args = parser.parse_args()
@@ -48,7 +48,8 @@ if __name__ == "__main__":
         categories = [args.category]
     else:
         categories = os.listdir(args.dataset_dir)
-
+    if 'x' in categories:
+        categories.remove('x')
 
     # scan all training data with random configuration from 0,1,2
     # and test data with 0,1,2
@@ -60,8 +61,8 @@ if __name__ == "__main__":
     # 3 (convonet) --cameras 50 --points 3000 --noise 0.005 --outliers 0.0
 
     for i,c in enumerate(categories):
-        # if c.startswith('.'):
-        #     continue
+        if c.startswith('.'):
+            continue
         print("\n############## Processing {}/{} ############\n".format(i+1,len(categories)))
 
         ### train
@@ -74,20 +75,20 @@ if __name__ == "__main__":
         for i in args.input:
             args.wdir = os.path.join(args.dataset_dir, c)
             args.i = os.path.join("3_scan", str(args.conf),i)
-            n = i.split('_')[2][:-4]
-            args.o = os.path.join(n,i[:-4])
+            name = i.split('_')[1][:-4]
+            args.o = os.path.join(name,i[:-4])
             args.g = "2_watertight/"+i[:-4]+".off"
 
-            # main(args)
+            main(args)
 
             # move
-            # in_dir =  os.path.join(args.dataset_dir,c,"gt",i[:-4]+"*")
-            # out_dir = os.path.join(conf_dir,n)
-            # if not os.path.exists(out_dir):
-            #     os.makedirs(out_dir)
-            # for f in glob.glob(in_dir):
-            #     p = subprocess.Popen(["mv",f,out_dir])
-            #     p.wait()
+            in_dir =  os.path.join(args.dataset_dir,c,"gt",i[:-4]+"*")
+            out_dir = os.path.join(conf_dir,name)
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
+            for f in glob.glob(in_dir):
+                p = subprocess.Popen(["mv",f,out_dir])
+                p.wait()
 
         # # night_stand to nightstand
         # in_dir =  os.path.join(args.dataset_dir,c,"train")

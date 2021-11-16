@@ -1,4 +1,4 @@
-# Scalable Surface Reconstruction with Delaunay-Graph Neural Networks
+# Scalable Surface Reconstruction with Delaunay-Graph Neural Networks [SGP 2021]
 [**Paper**](https://arxiv.org/pdf/2107.06130.pdf) | [**Video**](https://youtu.be/KIrCDGhS10o) <br>
 
 This repository contains the implementation of the paper:

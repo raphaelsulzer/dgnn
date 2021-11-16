@@ -109,7 +109,7 @@ def getDataset(clf,dataset,mode):
             for c in clf.training.classes:
                 for s in clf.training.scan_confs:
                     temp = []
-                    models = os.listdir(os.path.join(clf.training.path, c, "isosurface"))
+                    models = os.listdir(os.path.join(clf.training.path, c, "2_watertight"))
                     # this doesn't work here because not all models have every scan conf,
                     # so if I already prune the models beforehand it will return much less then
                     # specified in shapes_per_conf_per_class
@@ -132,19 +132,21 @@ def getDataset(clf,dataset,mode):
 
     elif (dataset == "reconbench"):
 
-        models = ["anchor", "daratech", "dc", "lordquas", "gargoyle"]
-
         if(mode == "validation"):
+            if(clf.validation.classes is None):
+                clf.validation.classes = ["anchor", "gargoyle", "lordquas", "daratech", "dc"]
             clf.validation.path, _, clf.validation.scan_confs = getConfig(clf, clf.validation)
             clf.validation.files = []
             for s in clf.validation.scan_confs:
-                for m in models:
+                for m in clf.validation.classes:
                     clf.validation.files.append({"path": clf.validation.path, "filename": m+"_"+str(s), "category":m,"id":"","scan_conf":str(s)})
         elif(mode == "inference"):
+            if (clf.inference.classes is None):
+                clf.inference.classes = ["anchor", "gargoyle", "lordquas", "daratech", "dc"]
             clf.inference.path, _, clf.inference.scan_confs = getConfig(clf, clf.inference)
             clf.inference.files = []
             for s in clf.inference.scan_confs:
-                for m in models:
+                for m in clf.inference.classes:
                     clf.inference.files.append({"path": clf.inference.path, "filename": m+"_"+str(s), "category":m,"id":"","scan_conf":str(s)})
         else:
             print("NOT IMPLEMENTED ERROR: can't train on reconbench dataset!")

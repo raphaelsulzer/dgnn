@@ -1,0 +1,186 @@
+
+######## TRAINING MODEL ########
+Load 127 graph(s) for training:
+
+Loaded graphs:
+	-confs [0, 1, 2, 3, 4]: [23. 33. 22. 27. 22.]
+	-14014670 nodes
+	-28 node features:
+	- ['reg_vol', 'radius', 'vol', 'longest_edge', 'shortest_edge', 'cb_vertex_inside_count', 'cb_vertex_inside_dist_min', 'cb_vertex_inside_dist_max', 'cb_vertex_inside_dist_sum', 'cb_vertex_outside_count', 'cb_vertex_outside_dist_min', 'cb_vertex_outside_dist_max', 'cb_vertex_outside_dist_sum', 'cb_facet_inside_first_count', 'cb_facet_inside_first_dist_min', 'cb_facet_inside_first_dist_max', 'cb_facet_inside_first_dist_sum', 'cb_facet_inside_second_count', 'cb_facet_inside_second_dist_min', 'cb_facet_inside_second_dist_max', 'cb_facet_inside_second_dist_sum', 'cb_facet_outside_first_count', 'cb_facet_outside_first_dist_min', 'cb_facet_outside_first_dist_max', 'cb_facet_outside_first_dist_sum', 'cb_facet_outside_second_count', 'cb_facet_outside_second_dist_min', 'cb_facet_outside_second_dist_max', 'cb_facet_outside_second_dist_sum']
+	-20 edge features:
+	- ['reg_beta', 'area', 'angle', 'beta', 'dist', 'fb_vertex_inside_count', 'fb_vertex_inside_dist_min', 'fb_vertex_inside_dist_max', 'fb_vertex_inside_dist_sum', 'fb_vertex_outside_count', 'fb_vertex_outside_dist_min', 'fb_vertex_outside_dist_max', 'fb_vertex_outside_dist_sum', 'fb_facet_inside_count', 'fb_facet_inside_dist_min', 'fb_facet_inside_dist_max', 'fb_facet_inside_dist_sum', 'fb_facet_outside_count', 'fb_facet_outside_dist_min', 'fb_facet_outside_dist_max', 'fb_facet_outside_dist_sum']
+	-standardize features to 0 mean and 1 std
+	-reduced data to 85.0% from 14014670 to 11912469 cells
+
+Sample neighborhoods with:
+	-clique size [-1]
+	-4+0 hops
+	-batch size 128
+	-self loops 0
+
+Load 10 graph(s) for testing:
+	- /home/raphael/data/reconbench/gt/dc_0_lrtcs_0
+	- /home/raphael/data/reconbench/gt/dc_1_lrtcs_0
+	- /home/raphael/data/reconbench/gt/dc_2_lrtcs_0
+	- /home/raphael/data/reconbench/gt/dc_3_lrtcs_0
+	- /home/raphael/data/reconbench/gt/dc_4_lrtcs_0
+	- /home/raphael/data/reconbench/gt/anchor_0_lrtcs_0
+	- /home/raphael/data/reconbench/gt/anchor_1_lrtcs_0
+	- /home/raphael/data/reconbench/gt/anchor_2_lrtcs_0
+	- /home/raphael/data/reconbench/gt/anchor_3_lrtcs_0
+	- /home/raphael/data/reconbench/gt/anchor_4_lrtcs_0
+
+Model:
+ SurfaceNet(
+  (convs): ModuleList(
+    (0): Sequential(
+      (conv): SAGEConv:
+      W1: Linear(in_features=28, out_features=64, bias=False)
+      W2: Linear(in_features=28, out_features=64, bias=True)
+      Φ: Linear(in_features=20, out_features=28, bias=True)
+      (norm): BatchNorm(64)
+      (relu): ReLU(inplace=True)
+    )
+    (1): Sequential(
+      (conv): SAGEConv:
+      W1: Linear(in_features=64, out_features=128, bias=False)
+      W2: Linear(in_features=64, out_features=128, bias=True)
+      Φ: Linear(in_features=20, out_features=64, bias=True)
+      (norm): BatchNorm(128)
+      (relu): ReLU(inplace=True)
+    )
+    (2): Sequential(
+      (conv): SAGEConv:
+      W1: Linear(in_features=128, out_features=128, bias=False)
+      W2: Linear(in_features=128, out_features=128, bias=True)
+      Φ: Linear(in_features=20, out_features=128, bias=True)
+      (norm): BatchNorm(128)
+      (relu): ReLU(inplace=True)
+    )
+    (3): Sequential(
+      (conv): SAGEConv:
+      W1: Linear(in_features=128, out_features=128, bias=False)
+      W2: Linear(in_features=128, out_features=128, bias=True)
+      Φ: Linear(in_features=20, out_features=128, bias=True)
+      (norm): BatchNorm(128)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (decoder): Sequential(
+    (0): Linear(in_features=128, out_features=64, bias=True)
+    (1): BatchNorm(64)
+    (2): ReLU(inplace=True)
+    (3): Linear(in_features=64, out_features=2, bias=True)
+  )
+)
+Total number of parameters: 102670
+
+Train for 30 epochs with kl on gpu 1:
+
+Epoch   1 -> Train OA cell: 87.99%,  Train Loss (cell): 0.0622,  Train Loss (reg): 0.0000
+
+Epoch   2 -> Train OA cell: 89.21%,  Train Loss (cell): 0.0431,  Train Loss (reg): 0.0000
+
+Epoch   3 -> Train OA cell: 89.49%,  Train Loss (cell): 0.0375,  Train Loss (reg): 0.0000
+
+[1;0;46m
+Epoch   3 -> File dc_0_lrtcs_0 Test OA cell: 79.94%,   Test Loss (cell): 0.1782,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   3 -> File dc_1_lrtcs_0 Test OA cell: 84.41%,   Test Loss (cell): 0.1270,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   3 -> File dc_2_lrtcs_0 Test OA cell: 83.51%,   Test Loss (cell): 0.1537,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   3 -> File dc_3_lrtcs_0 Test OA cell: 90.81%,   Test Loss (cell): 0.0201,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   3 -> File dc_4_lrtcs_0 Test OA cell: 86.56%,   Test Loss (cell): 0.0274,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   3 -> File anchor_0_lrtcs_0 Test OA cell: 77.51%,   Test Loss (cell): 0.3718,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   3 -> File anchor_1_lrtcs_0 Test OA cell: 85.33%,   Test Loss (cell): 0.1613,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   3 -> File anchor_2_lrtcs_0 Test OA cell: 87.20%,   Test Loss (cell): 0.1605,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   3 -> File anchor_3_lrtcs_0 Test OA cell: 92.75%,   Test Loss (cell): 0.0290,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   3 -> File anchor_4_lrtcs_0 Test OA cell: 87.14%,   Test Loss (cell): 0.0367,   Test Loss (reg): 0.0000
+[0m
+[1;0;44m
+Epoch   3 -> Mean OA cell: 87.19%,   Test Loss (cell): 0.0921,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   3 -> Test OA cell: 86.85%,   Test Loss (cell): 0.0637,   Test Loss (reg): 0.0000
+[0m
+[1;0;42m
+Epoch 3 -> Export model to /home/raphael/cpp/surfaceReconstruction/python/models/kf96/kf96_3.ptm
+[0m
+Epoch   4 -> Train OA cell: 89.66%,  Train Loss (cell): 0.0349,  Train Loss (reg): 0.0000
+
+Epoch   5 -> Train OA cell: 89.77%,  Train Loss (cell): 0.0333,  Train Loss (reg): 0.0000
+
+Epoch   6 -> Train OA cell: 89.83%,  Train Loss (cell): 0.0313,  Train Loss (reg): 0.0000
+
+[1;0;46m
+Epoch   6 -> File dc_0_lrtcs_0 Test OA cell: 92.14%,   Test Loss (cell): 0.0895,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   6 -> File dc_1_lrtcs_0 Test OA cell: 92.39%,   Test Loss (cell): 0.0511,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   6 -> File dc_2_lrtcs_0 Test OA cell: 86.43%,   Test Loss (cell): 0.0924,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   6 -> File dc_3_lrtcs_0 Test OA cell: 95.31%,   Test Loss (cell): 0.0096,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   6 -> File dc_4_lrtcs_0 Test OA cell: 87.65%,   Test Loss (cell): 0.0238,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   6 -> File anchor_0_lrtcs_0 Test OA cell: 91.37%,   Test Loss (cell): 0.0982,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   6 -> File anchor_1_lrtcs_0 Test OA cell: 89.68%,   Test Loss (cell): 0.1009,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   6 -> File anchor_2_lrtcs_0 Test OA cell: 88.19%,   Test Loss (cell): 0.1117,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   6 -> File anchor_3_lrtcs_0 Test OA cell: 95.54%,   Test Loss (cell): 0.0170,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   6 -> File anchor_4_lrtcs_0 Test OA cell: 88.56%,   Test Loss (cell): 0.0331,   Test Loss (reg): 0.0000
+[0m
+[1;0;44m
+Epoch   6 -> Mean OA cell: 90.75%,   Test Loss (cell): 0.0487,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   6 -> Test OA cell: 90.00%,   Test Loss (cell): 0.0325,   Test Loss (reg): 0.0000
+[0m
+[1;0;42m
+Epoch 6 -> Export model to /home/raphael/cpp/surfaceReconstruction/python/models/kf96/kf96_6.ptm
+[0m
+Epoch   7 -> Train OA cell: 89.95%,  Train Loss (cell): 0.0301,  Train Loss (reg): 0.0000
+
+Epoch   8 -> Train OA cell: 90.14%,  Train Loss (cell): 0.0244,  Train Loss (reg): 0.0000
+
+Epoch   9 -> Train OA cell: 90.22%,  Train Loss (cell): 0.0237,  Train Loss (reg): 0.0000
+
+[1;0;46m
+Epoch   9 -> File dc_0_lrtcs_0 Test OA cell: 92.01%,   Test Loss (cell): 0.0632,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   9 -> File dc_1_lrtcs_0 Test OA cell: 92.66%,   Test Loss (cell): 0.0248,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   9 -> File dc_2_lrtcs_0 Test OA cell: 87.19%,   Test Loss (cell): 0.1205,   Test Loss (reg): 0.0000
+[0m
+[1;0;46m
+Epoch   9 -> File dc_3_lrtcs_0 Test OA cell: 95.65%,   Test Loss (cell): 0.0069,   Test Loss (reg): 0.0000

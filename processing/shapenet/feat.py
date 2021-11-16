@@ -76,7 +76,7 @@ if __name__ == "__main__":
             name = i.split('_')[0]
             conf = i.split('_')[1][:-4]
             args.o = name
-            args.g = "isosurface/"+name+".off"
+            args.g = "2_watertight/"+name+".off"
 
             main(args)
 

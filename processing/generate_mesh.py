@@ -8,60 +8,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
 from libmesh import check_mesh_contains
 import gco
 import torch.nn.functional as F
-
-
-# def compute_iou(gt_mesh,recon_mesh):
-#     test_points = 10000
-#     succesfully_tested_points = 0
-#     intersection = 0
-#
-#     while(succesfully_tested_points < test_points):
-#
-#         point = (np.random.rand(1,3)-0.5)*1.05
-#
-#         gt = check_mesh_contains(gt_mesh,point)
-#         recon = check_mesh_contains(recon_mesh,point)
-#
-#         if(gt and recon):
-#             succesfully_tested_points+=1
-#             intersection+=1
-#         elif(gt or recon):
-#             succesfully_tested_points+=1
-#
-#
-#     iou = intersection / test_points
-
-
-
-def compute_iou(occ1, occ2):
-    ''' Computes the Intersection over Union (IoU) value for two sets of
-    occupancy values.
-
-    Args:
-        occ1 (tensor): first set of occupancy values
-        occ2 (tensor): second set of occupancy values
-    '''
-    occ1 = np.asarray(occ1)
-    occ2 = np.asarray(occ2)
-
-    # Put all data in second dimension
-    # Also works for 1-dimensional data
-    if occ1.ndim >= 2:
-        occ1 = occ1.reshape(occ1.shape[0], -1)
-    if occ2.ndim >= 2:
-        occ2 = occ2.reshape(occ2.shape[0], -1)
-
-    # Convert to boolean values
-    occ1 = (occ1 >= 0.5)
-    occ2 = (occ2 >= 0.5)
-
-    # Compute IOU
-    area_union = (occ1 | occ2).astype(np.float32).sum(axis=-1)
-    area_intersect = (occ1 & occ2).astype(np.float32).sum(axis=-1)
-
-    iou = (area_intersect / area_union)
-
-    return iou
+from evaluate_mesh import compute_iou, compute_chamfer
 
 
 
@@ -71,7 +18,7 @@ def graph_cut(labels,prediction,edges):
     gc.create_general_graph(edges.max()+1, 2)
     # data_cost = F.softmax(prediction, dim=-1)
     prediction[:, [0, 1]] = prediction[:, [1, 0]]
-    data_cost = (prediction*10).round()
+    data_cost = (prediction*100).round()
 
     data_cost = np.array(data_cost,dtype=int)
     ### append high cost for inside for infinite cell
@@ -79,7 +26,7 @@ def graph_cut(labels,prediction,edges):
     gc.set_data_cost(data_cost)
     smooth = (1 - np.eye(2)).astype(int)
     gc.set_smooth_cost(smooth)
-    gc.set_all_neighbors(edges[:,0],edges[:,1],np.ones(edges.shape[0],dtype=int)*10)
+    gc.set_all_neighbors(edges[:,0],edges[:,1],np.ones(edges.shape[0],dtype=int)*100)
 
     for i,l in enumerate(labels):
         gc.init_label_at_site(i,l)
@@ -115,7 +62,7 @@ def generate(data, prediction, clf):
     # take out all the infinite cells for the graph cut
     edges = mdata['nfacets']
 
-    if(clf.inference.graph_cut):
+    if(clf.temp.graph_cut):
         mask = (edges >= 0).all(axis=1)
         gc_edges = edges[mask]
         labels=graph_cut(labels,prediction[data.y[:, 4] == 0],gc_edges)
@@ -135,28 +82,53 @@ def generate(data, prediction, clf):
             interfaces.append(fi)
 
     recon_mesh = trimesh.Trimesh(mdata["vertices"], mdata["facets"][interfaces],process=True)
-    if(clf.inference.fix_orientation):
+    if(clf.temp.fix_orientation):
         trimesh.repair.fix_normals(recon_mesh)
 
-    gt_file = os.path.join(data.path, "convonet", data.scan_conf, data.category, "points.npz")
+    eval_dict = dict()
 
-    gt_data = np.load(gt_file)
+    ### watertight ###
+    if("watertight" in clf.temp.eval):
+        eval_dict["watertight"] = int(recon_mesh.is_watertight)
+        # print("WARNING: Mesh is not watertight: ", data['filename'])
 
-    points = gt_data["points"]
+    subfolder = data['id'] if data['id'] else data['category']
 
-    gt_occ = gt_data["occupancies"]
-    gt_occ = np.unpackbits(gt_occ)[:points.shape[0]]
-    gt_occ = gt_occ.astype(np.float32)
+    ### IOU ###
+    if('iou' in clf.temp.eval):
+        occ_file = os.path.join(data.path, "eval", subfolder, "points.npz")
+        occ = np.load(occ_file)
+        occ_points = occ["points"]
+        gt_occ = occ["occupancies"]
+        gt_occ = np.unpackbits(gt_occ)[:occ_points.shape[0]]
+        gt_occ = gt_occ.astype(np.float32)
 
-    try:
-        recon_occ = check_mesh_contains(recon_mesh,points)
-        iou = compute_iou(gt_occ, recon_occ)
-    except:
-        iou = 0.0
+        try:
+            recon_occ = check_mesh_contains(recon_mesh,occ_points)
+            eval_dict["iou"] = compute_iou(gt_occ, recon_occ)
+        except:
+            print("WARNING: Could not calculate IoU for mesh ",data['filename'])
+            eval_dict["iou"] = 0.0
+
+    ### Chamfer ###
+    if('chamfer' in clf.temp.eval):
+        points_file = os.path.join(data.path, "eval", subfolder, "pointcloud.npz")
+        points = np.load(points_file)
+        gt_points = points["points"]
+        gt_points = gt_points.astype(np.float32)
+
+        ## TODO: set return index = True and get face normals to compute a normal consistency
+        recon_points = recon_mesh.sample(gt_points.shape[0],return_index=False)
+
+        try:
+            eval_dict["chamfer"] = compute_chamfer(gt_points, recon_points) # this is already two-sided
+        except:
+            print("WARNING: Could not calculate Chamfer distance for mesh ",data['filename'])
+            eval_dict["iou"] = 0.0
 
 
 
-    return recon_mesh,iou
+    return recon_mesh, eval_dict
 
 
 

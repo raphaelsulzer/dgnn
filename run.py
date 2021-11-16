@@ -1,6 +1,8 @@
 import sys, os, argparse, datetime, copy
 from shutil import copyfile
 import pandas as pd
+import gc
+import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'learning'))
 import surfaceNet as sage
@@ -58,6 +60,8 @@ def training(clf):
     temp_loader = DataLoader(all_graphs, batch_size=len(clf.training.files), shuffle=True)
     data.train = Munch()
     data.train.all = next(iter(temp_loader))
+    del temp_loader
+    gc.collect()
 
     print("\nSample neighborhoods with:\n\t-clique size {}\n\t-{}+{} hops\n\t-batch size {}\n\t-self loops {}"\
           .format(clf.graph.clique_sizes, clf.graph.num_hops, clf.graph.additional_num_hops, clf.training.batch_size, clf.graph.self_loops))
@@ -121,7 +125,8 @@ def inference(clf):
     clf.temp.device = "cuda:" + str(clf.temp.args.gpu)
     clf.temp.print_cm = True
     clf.temp.batch_size = clf.inference.batch_size
-    clf.regularization.reg_epoch = None
+    # clf.regularization.reg_epoch = None
+    # print("Turn of regularization for inference")
     if(clf.inference.per_layer):
         clf.temp.clique_size = clf.graph.clique_sizes
     else:
@@ -142,13 +147,18 @@ def inference(clf):
         print("\nERROR: The model {} does not exist!".format(model_file))
         sys.exit(1)
     model.load_state_dict(load(model_file))
-    print("\nTurn of regularization for inference")
-
     trainer = rm.Trainer(model)
 
-    iou_all = 0; count = 0; loss = 0; weight = 0
+    ############################################
+    ######### Reconstruct and evaluate #########
+    ############################################
+    results_dict = {}
+    df = pd.DataFrame(index=clf.inference.scan_confs, columns=clf.inference.classes)
+    df.index.name = "scan_conf"
+    results_dict['loss'] = df.copy()
+    for key in clf.temp.eval:
+        results_dict[key] = df.copy()
     for clf.temp.inference_file in tqdm(clf.inference.files, ncols=50):
-    # for clf.temp.inference_file in clf.inference.files:
 
         ###############################
         ########## load data ##########
@@ -160,24 +170,21 @@ def inference(clf):
             print("\nSample neighborhoods with:\n\t-clique size {}\n\t-{} hops\n\t-batch size {}\n\t-self loops {}" \
                   .format(clf.graph.clique_sizes, clf.graph.num_hops, clf.temp.batch_size, clf.graph.self_loops))
 
-
         prediction = trainer.inference(data, subgraph_sampler, clf)
         # my_loader.exportScore(prediction)
+        results_dict["loss"].loc[results_dict["loss"].index[int(data["scan_conf"])], data["category"]] = clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum
 
-        mesh, iou = gm.generate(data, prediction, clf)
-        # print("Mesh {} : IoU {}".format(data["category"]+"_"+data["id"],iou))
-        iou_all += iou
-        count += 1
-        loss += clf.temp.metrics.cell_sum
-        weight += clf.temp.metrics.weight_sum
+        mesh, eval_dict = gm.generate(data, prediction, clf)
+        # print("Mesh {} : IoU {} - Loss {}".format(data["filename"],iou,clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum))
+        for key,value in eval_dict.items():
+            results_dict[key].loc[results_dict[key].index[int(data["scan_conf"])], data["category"]] = value
+
         # export one shape per class
-        mesh.export(os.path.join(clf.paths.out_dir, "generation", data["category"] + "_" + data['id'] + ".ply"))
+        mesh.export(os.path.join(clf.paths.out_dir, "generation", data["filename"]+".ply"))
 
-
-
-    print("Mean IoU: ", iou_all/count)
-    print("Mean Loss (cell): ", loss/weight)
-    clf.time.end = str(datetime.datetime.now())
+    for key, value in results_dict.items():
+        value["mean"] = value.mean(numeric_only=False, axis=1)
+        print("{}\n{}\n".format(key,value))
 
 
 
@@ -268,6 +275,8 @@ if __name__ == "__main__":
     ################# create the model dir #################
     if(not os.path.exists(os.path.join(clf.paths.out_dir,"generation"))):
         os.makedirs(os.path.join(clf.paths.out_dir,"generation"))
+    if(not os.path.exists(os.path.join(clf.paths.out_dir,"prediction"))):
+        os.makedirs(os.path.join(clf.paths.out_dir,"prediction"))
     # save conf file to out_dir
     clf.files.config = os.path.join(clf.paths.out_dir,"config.yaml")
     clf.files.results = os.path.join(clf.paths.out_dir,"results.csv")
@@ -281,12 +290,13 @@ if __name__ == "__main__":
     ################# print time before training/classification #################
     clf.temp.start = datetime.datetime.now()
     print(clf.temp.start)
-    clf.time.start = str(clf.temp.start)
+    # clf.time.start = str(clf.temp.start)
     print("READ CONFIG FROM ", args.conf)
     print("SAVE CONFIG TO ", clf.files.config)
 
     ############ TRAINING #############
     if(args.training):
+        clf.temp.graph_cut = clf.validation.graph_cut; clf.temp.fix_orientation = clf.validation.fix_orientation; clf.temp.eval = clf.validation.eval
         # log output
         sys.stdout = Logger(os.path.join(clf.paths.out_dir, "log.txt"))
         clf.temp.logger = sys.stdout
@@ -300,6 +310,7 @@ if __name__ == "__main__":
     clf.temp.inference_time = 0
     clf.temp.subgraph_time = 0
     if(args.inference):
+        clf.temp.graph_cut = clf.inference.graph_cut; clf.temp.fix_orientation = clf.inference.fix_orientation; clf.temp.eval = clf.inference.eval
         ############ INFERENCE #############
         getDataset(clf, clf.inference.dataset, "inference")
         inference(clf)
