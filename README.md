@@ -162,13 +162,13 @@ to batch process all files in your dataset.
 
 ## References
 
-[1] PENG S., NIEMEYER M., MESCHEDER L., POLLEFEYS M.,
-GEIGER A.: Convolutional occupancy networks. In ECCV (2020).
+[[1] PENG S., NIEMEYER M., MESCHEDER L., POLLEFEYS M.,
+GEIGER A.: Convolutional occupancy networks. In ECCV (2020).](https://arxiv.org/abs/2003.04618)
 
-[2] BERGER M., LEVINE J. A., NONATO L. G., TAUBIN G.,
-SILVA C. T.: A benchmark for surface reconstruction. ACM Transaction on Graphics. (2013).
+[[2] BERGER M., LEVINE J. A., NONATO L. G., TAUBIN G.,
+SILVA C. T.: A benchmark for surface reconstruction. ACM Transaction on Graphics. (2013).](http://vgc.poly.edu/files/berger/recon_bench/paper/tog.pdf)
 
-[3] SCHÖPS T., SCHÖNBERGER J. L., GALLIANI S., SATTLER
+[[3] SCHÖPS T., SCHÖNBERGER J. L., GALLIANI S., SATTLER
 T., SCHINDLER K., POLLEFEYS M., GEIGER A.: A multi-view stereo
 benchmark with high-resolution images and multi-camera videos. In
-CVPR (2017).
+CVPR (2017).](http://www.cvlibs.net/publications/Schoeps2017CVPR.pdf)
