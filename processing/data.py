@@ -354,7 +354,7 @@ class dataLoader:
             print("Export predictions to: ", outpath)
 
         # export predictions
-        file = os.path.join(outpath,self.category+"_"+self.id+".npz")
+        file = os.path.join(outpath,self.filename+".npz")
         f = open(file, 'wb')
         np.savez(f,
                  number_of_cells=int(len(prediction)),

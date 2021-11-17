@@ -390,6 +390,7 @@ class Trainer():
             if(clf.inference.per_layer and clf.temp.batch_size):
                 # print("\nInference per layer per batch")
                 assert(subgraph_loader)
+                assert(len(subgraph_loader.sizes)==1)
                 logits_cell = self.model.inference_layer_batch(data_inference, subgraph_loader)
             elif(clf.inference.per_layer and not clf.temp.batch_size):
                 # print("\nInference per layer")

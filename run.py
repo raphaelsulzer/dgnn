@@ -63,19 +63,22 @@ def training(clf):
     del temp_loader
     gc.collect()
 
-    print("\nSample neighborhoods with:\n\t-clique size {}\n\t-{}+{} hops\n\t-batch size {}\n\t-self loops {}"\
+    print("\nSample neighborhoods with:\n\t-clique size {}\n\t-{}+{} hop(s)\n\t-batch size {}\n\t-self loops {}"\
           .format(clf.graph.clique_sizes, clf.graph.num_hops, clf.graph.additional_num_hops, clf.training.batch_size, clf.graph.self_loops))
-    clf.temp.clique_size=clf.graph.clique_sizes*(clf.graph.num_hops+clf.graph.additional_num_hops)
+
+    clf.graph.num_hops+=clf.graph.additional_num_hops
 
     if(not clf.model.edge_convs and clf.graph.self_loops):
         data.train.all.edge_index = add_self_loops(data.train.all.edge_index)[0]
     data.train.batches = NeighborSampler(edge_index=data.train.all.edge_index, node_idx=train_mask,
-                                   sizes=clf.temp.clique_size, batch_size=clf.training.batch_size, sampler=None,
+                                   sizes=clf.graph.clique_sizes*clf.graph.num_hops, batch_size=clf.training.batch_size, sampler=None,
                                    shuffle=True, drop_last=True, return_e_id=clf.model.edge_convs)
 
     ##################################
     ###### load validation data ######
     ##################################
+    #### determine subgraph size, see the different inference functions in the model implementation for details
+    clf.temp.clique_size = clf.graph.clique_sizes if clf.validation.per_layer else clf.graph.clique_sizes*clf.graph.num_hops
     data.validation = Munch()
     data.validation.all = []
     data.validation.batches = []
@@ -120,17 +123,15 @@ def training(clf):
 
 
 def inference(clf):
-    print("\n######## START INFERENCE OF {} FILES ########".format(len(clf.inference.files)))
+    print("\n######## START INFERENCE OF {} FILE(S) ########".format(len(clf.inference.files)))
 
     clf.temp.device = "cuda:" + str(clf.temp.args.gpu)
-    clf.temp.print_cm = True
     clf.temp.batch_size = clf.inference.batch_size
     # clf.regularization.reg_epoch = None
     # print("Turn of regularization for inference")
-    if(clf.inference.per_layer):
-        clf.temp.clique_size = clf.graph.clique_sizes
-    else:
-        clf.temp.clique_size = clf.graph.clique_sizes*clf.graph.num_hops
+
+    #### determine subgraph size, see the different inference functions in the model implementation for details
+    clf.temp.clique_size = clf.graph.clique_sizes if clf.inference.per_layer else clf.graph.clique_sizes*clf.graph.num_hops
 
     # load one file to know the feature dimensions
     my_loader, _,_ = prepareSample(clf, clf.inference.files[0])
@@ -142,11 +143,13 @@ def inference(clf):
     model_file = os.path.join(clf.paths.out,"model_"+str(clf.inference.model)+".ptm")
     print("\nLOAD MODEL {}\n".format(model_file))
     model = createModel(clf)
-    model.to(clf.temp.device)
     if(not os.path.isfile(model_file)):
         print("\nERROR: The model {} does not exist!".format(model_file))
         sys.exit(1)
-    model.load_state_dict(load(model_file))
+    ### load model to cpu first, can bug otherwise, see here: https://discuss.pytorch.org/t/cuda-error-out-of-memory-when-load-models/38011/4
+    ### to check which device model is on do: https://discuss.pytorch.org/t/cuda-error-out-of-memory-when-load-models/38011/4
+    model.load_state_dict(load(model_file,map_location='cpu'))
+    model.to(clf.temp.device)
     trainer = rm.Trainer(model)
 
     ############################################
@@ -156,6 +159,7 @@ def inference(clf):
     df = pd.DataFrame(index=clf.inference.scan_confs, columns=clf.inference.classes)
     df.index.name = "scan_conf"
     results_dict['loss'] = df.copy()
+    # results_dict['count'] = df.copy()
     for key in clf.temp.eval:
         results_dict[key] = df.copy()
     for clf.temp.inference_file in tqdm(clf.inference.files, ncols=50):
@@ -167,19 +171,23 @@ def inference(clf):
         loader, data, subgraph_sampler = prepareSample(clf, clf.temp.inference_file)
         loader.getInfo()
         if (clf.temp.batch_size):
-            print("\nSample neighborhoods with:\n\t-clique size {}\n\t-{} hops\n\t-batch size {}\n\t-self loops {}" \
-                  .format(clf.graph.clique_sizes, clf.graph.num_hops, clf.temp.batch_size, clf.graph.self_loops))
+            print("\nSample neighborhoods with:\n\t-clique size {}\n\t-{} hop(s)\n\t-batch size {}\n\t-self loops {}" \
+                  .format(clf.graph.clique_sizes, len(clf.graph.clique_sizes), clf.temp.batch_size, clf.graph.self_loops))
+
+        row = data['scan_conf'] if data['scan_conf'] else str(0)
 
         prediction = trainer.inference(data, subgraph_sampler, clf)
-        # my_loader.exportScore(prediction)
-        results_dict["loss"].loc[results_dict["loss"].index[int(data["scan_conf"])], data["category"]] = clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum
-        mesh, eval_dict = gm.generate(data, prediction, clf)
-        # print("Mesh {} : IoU {} - Loss {}".format(data["filename"],iou,clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum))
-        for key,value in eval_dict.items():
-            results_dict[key].loc[results_dict[key].index[int(data["scan_conf"])], data["category"]] = value
+        results_dict["loss"].loc[int(row), data["category"]] = clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum
+        # results_dict["count"].loc[int(row), data["category"]] += 1
+        if("prediction" in clf.inference.export):
+            my_loader.exportScore(prediction)
+        if("mesh" in clf.inference.export):
+            mesh, eval_dict = gm.generate(data, prediction, clf)
+            for key,value in eval_dict.items():
+                results_dict[key].loc[int(row), data["category"]] = value
 
-        # export one shape per class
-        mesh.export(os.path.join(clf.paths.out, "generation", data["filename"]+".ply"))
+            # export one shape per class
+            mesh.export(os.path.join(clf.paths.out, "generation", data["filename"]+".ply"))
 
     for key, value in results_dict.items():
         value["mean"] = value.mean(numeric_only=False, axis=1)
@@ -285,8 +293,6 @@ if __name__ == "__main__":
     # save conf file to out
     clf.files.config = os.path.join(clf.paths.out,"config.yaml")
     clf.files.results = os.path.join(clf.paths.out,"results.csv")
-    if(not os.path.isfile(clf.files.config)):
-        copyfile(args.conf,clf.files.config)
     # create the results df
     clf.results_df = pd.DataFrame(columns=['iteration', 'epoch', 'train_loss', 'train_loss_reg', 'train_OA', 'test_loss', 'test_loss_reg', 'test_OA', 'test_iou', 'test_best_iou'])
     clf.best_iou = 100000
@@ -303,6 +309,9 @@ if __name__ == "__main__":
     ############ TRAINING #############
     if(args.training):
         clf.temp.graph_cut = clf.validation.graph_cut; clf.temp.fix_orientation = clf.validation.fix_orientation; clf.temp.eval = clf.validation.eval
+        # log output
+        # copy conf file to out dir
+        copyfile(args.conf, clf.files.config)
         # log output
         sys.stdout = Logger(os.path.join(clf.paths.out, "log.txt"))
         clf.temp.logger = sys.stdout

@@ -27,10 +27,12 @@ def getConfig(clf,mode):
     else:
         classes = mode.classes
 
-    if(mode.scan_confs == -1):
-        mode.scan_confs = [0, 1, 2, 3, 4]
-    else:
+    if (not isinstance(mode.scan_confs, list)):
         mode.scan_confs = [mode.scan_confs]
+    if(mode.scan_confs[0] == -1):
+        mode.scan_confs = [0, 1, 2, 3, 4]
+
+
 
 
     return path,classes,mode.scan_confs
@@ -174,7 +176,7 @@ def getDataset(clf,dataset,mode):
 
         if(mode == "training"):
 
-            clf.training.path, clf.training.classes, clf.training.scan_confs = getConfig(clf,clf.training)
+            clf.training.path, _, _ = getConfig(clf,clf.training)
             clf.training.files = []
 
             models = np.loadtxt(os.path.join(clf.training.path, "train.lst"),dtype=str)[:clf.training.shapes_per_conf_per_class]
@@ -185,17 +187,17 @@ def getDataset(clf,dataset,mode):
 
         elif(mode == "validation"):
 
-            clf.validation.path, clf.validation.classes, clf.validation.scan_confs = getConfig(clf,clf.validation)
+            clf.validation.path, _, _ = getConfig(clf,clf.validation)
             clf.validation.files = []
-            models = np.loadtxt(os.path.join(clf.training.path, "test_crop.lst"),dtype=str)[:clf.validation.shapes_per_conf_per_class]
+            models = np.loadtxt(os.path.join(clf.validation.path, "test.lst"),dtype=str)[:clf.validation.shapes_per_conf_per_class]
             for m in models:
-                if os.path.isfile(os.path.join(clf.training.path, "mesh", m+".off")):
-                    d = {"path": os.path.join(clf.training.path), "filename": m, "category": m, "id": "", "scan_conf": ""}
+                if os.path.isfile(os.path.join(clf.validation.path, "mesh", m+".off")):
+                    d = {"path": os.path.join(clf.validation.path), "filename": m, "category": m, "id": "", "scan_conf": ""}
                     clf.validation.files.append(d)
 
         elif(mode == "inference"):
 
-            clf.inference.path, clf.inference.classes, clf.inference.scan_confs = getConfig(clf,clf.inference)
+            clf.inference.path, _, _ = getConfig(clf,clf.inference)
 
             temp = []
             if(clf.inference.files is not None):
@@ -207,15 +209,12 @@ def getDataset(clf,dataset,mode):
                 return
             else:
                 clf.inference.files = []
-                for c in clf.inference.classes:
-                    for s in clf.data.scan_confs:
-                        models = os.listdir(os.path.join(clf.inference.path,c,"test"))
-                        models = models[:clf.inference.shapes_per_conf_per_class]
-                        for m in models:
-                            if os.path.isfile(os.path.join(clf.inference.path,c,"2_watertight",m)):
-                                n = re.split(r'[_.]+',m)
-                                d = {"path": os.path.join(clf.inference.path,n[0]),"category":n[0],"id":n[1],"scan_conf":str(s)}
-                                clf.inference.files.append(d)
+                models = np.loadtxt(os.path.join(clf.inference.path, "test.lst"), dtype=str)[
+                         :clf.inference.shapes_per_conf_per_class]
+                for m in models:
+                    if os.path.isfile(os.path.join(clf.inference.path, "mesh", m + ".off")):
+                        d = {"path": os.path.join(clf.inference.path), "filename": m, "category": m, "id": "", "scan_conf": ""}
+                        clf.inference.files.append(d)
         else:
             print("ERROR: not a valid method for getDataset.py")
             sys.exit(1)

@@ -231,7 +231,7 @@ class SurfaceNet(nn.Module):
     #######################################################
     def inference_batch_layer(self, data_all, batch_loader):
         # produces embeddings layer by layer, batch per batch
-        # subgraph sampling necessary
+        # subgraph sampling of GRAPH.NUM_HOPS necessary
         # needed when full graph does not fit in VRAM
 
 
@@ -278,7 +278,7 @@ class SurfaceNet(nn.Module):
 
     def inference_layer_batch(self, data_all, batch_loader):
         # produces embeddings layer by layer, batch per batch
-        # subgraph sampling necessary
+        # subgraph sampling with ONE HOP necessary
         # needed when full graph does not fit in VRAM
 
         if (self.clf.regularization.cell_reg_type):
@@ -298,7 +298,7 @@ class SurfaceNet(nn.Module):
         for i in range(self.num_layers):
             xs = []
             for batch_size, n_id, adj in batch_loader:
-                edge_index, e_id, size = adj[i]  # get adjacencies of current layer / hop
+                edge_index, e_id, size = adj  # get adjacencies of current layer / hop
                 x = x_all[n_id].to(self.clf.temp.device)
                 x_target = x[:size[1]]
                 x = self.convs[i][0]((x, x_target), xe[e_id].to(self.clf.temp.device), edge_index.to(self.clf.temp.device))

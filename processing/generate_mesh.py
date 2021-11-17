@@ -14,23 +14,26 @@ from evaluate_mesh import compute_iou, compute_chamfer
 
 def graph_cut(labels,prediction,edges,clf):
 
+    dtype = np.float64
+
     gc = gco.GCO()
     gc.create_general_graph(edges.max()+1, 2)
     # data_cost = F.softmax(prediction, dim=-1)
-    prediction[:, [0, 1]] = prediction[:, [1, 0]]
-    data_cost = (prediction*clf.graph_cut.unary_weight).round()
-
-    data_cost = np.array(data_cost,dtype=int)
+    # prediction[:, [0, 1]] = prediction[:, [1, 0]]
+    # data_cost = (prediction*clf.graph_cut.unary_weight).round()
+    data_cost = prediction
+    # TODO: check why graph_cut seems to produce slightly worse results with float datatype, so I can stop multiplying and rounding data_cost to use int datatype
+    data_cost = np.array(data_cost,dtype=dtype)
     ### append high cost for inside for infinite cell
     # data_cost = np.append(data_cost, np.array([[-10000, 10000]]), axis=0)
     gc.set_data_cost(data_cost)
-    smooth = (1 - np.eye(2)).astype(int)
+    smooth = (1 - np.eye(2)).astype(dtype)
     gc.set_smooth_cost(smooth)
     if(not clf.graph_cut.binary_type):
-        edge_weight = np.ones(edges.shape[0],dtype=int)
+        edge_weight = np.ones(edges.shape[0],dtype=dtype)
     else:
         # TODO: retrieve the beta-skeleton and area value from the features to weight the binaries
-        edge_weight = np.ones(edges.shape[0], dtype=int)
+        edge_weight = np.ones(edges.shape[0], dtype=dtype)
 
     gc.set_all_neighbors(edges[:,0],edges[:,1],edge_weight*clf.graph_cut.binary_weight)
 
@@ -70,7 +73,10 @@ def generate(data, prediction, clf):
     if(clf.temp.graph_cut):
         mask = (edges >= 0).all(axis=1)
         gc_edges = edges[mask]
-        labels=graph_cut(labels,prediction[data.y[:, 4] == 0],gc_edges,clf)
+        try:
+            labels=graph_cut(labels,prediction[data.y[:, 4] == 0],gc_edges,clf)
+        except:
+            print("WARNING: Graph cut for {} didn't work. Using raw predictions for mesh generation.".format(data.filename))
 
     # add a last cell as the infinite cell
     for i, e in enumerate(edges):

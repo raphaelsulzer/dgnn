@@ -32,7 +32,6 @@ def bins_labels(bins, **kwclf):
 #     clf.lr = 5e-3
 #     clf.lr_sd = 8
 #     clf.wd = 0
-#     clf.print_cm = True
 #     clf.with_rays = False
 #     clf.with_label = True
 #
