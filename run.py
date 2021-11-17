@@ -289,7 +289,8 @@ if __name__ == "__main__":
         copyfile(args.conf,clf.files.config)
     # create the results df
     clf.results_df = pd.DataFrame(columns=['iteration', 'epoch', 'train_loss', 'train_loss_reg', 'train_OA', 'test_loss', 'test_loss_reg', 'test_OA', 'test_iou', 'test_best_iou'])
-    clf.best_iou = 0
+    clf.best_iou = 100000
+    clf.best_chamfer = 100000
 
 
     ################# print time before training/classification #################

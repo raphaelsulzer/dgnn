@@ -190,8 +190,8 @@ class Trainer():
                 sys.exit(1)
 
             # multiply loss per cell with volume of the cell
-            shape_weight = data.batch_x[:, 0].to(clf.temp.device)
-            # shape_weight =  torch.sqrt(batch_x[:,0].to(clf.temp.device))
+            # shape_weight = data.batch_x[:, 0].to(clf.temp.device)
+            shape_weight = torch.sqrt(data.batch_x[:, 0].to(clf.temp.device))
             # shape_weight =  torch.log(1+batch_x[:,0].to(clf.temp.device))
 
             cell_loss = cell_loss * shape_weight
@@ -334,7 +334,7 @@ class Trainer():
                         else:
                             prediction = self.inference(d,[],clf)
                             temp=gm.generate(d, prediction, clf)
-                            iou+=temp[1]
+                            iou+=temp[1]["chamfer"]
                             # export one shape per class
                             if(i%clf.validation.shapes_per_conf_per_class == 0):
                                 # my_loader.exportScore(prediction)
@@ -347,8 +347,9 @@ class Trainer():
 
                     re = reg/edges if (reg>0.0 and edges>0.0) else float("nan")
 
-                    iou = iou*100/len(data.validation.all)
-                    if(iou > clf.best_iou):
+                    iou = iou/len(data.validation.all)
+                    #### WARNING I TURNED THIS AROUND BECAUSE MISSUSING IT AS CHAMFER ########
+                    if(iou < clf.best_iou):
                         clf.best_iou = iou
                         model_path = os.path.join(clf.paths.out,"model_best.ptm")
                         torch.save(self.model.state_dict(), model_path)

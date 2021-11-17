@@ -232,7 +232,7 @@ class SurfaceNet(nn.Module):
     def inference_batch_layer(self, data_all, batch_loader):
         # produces embeddings layer by layer, batch per batch
         # subgraph sampling necessary
-        # needed when full graph does not fit in memory
+        # needed when full graph does not fit in VRAM
 
 
         if (self.clf.training.loss == "kl"):
@@ -279,7 +279,7 @@ class SurfaceNet(nn.Module):
     def inference_layer_batch(self, data_all, batch_loader):
         # produces embeddings layer by layer, batch per batch
         # subgraph sampling necessary
-        # needed when full graph does not fit in memory
+        # needed when full graph does not fit in VRAM
 
         if (self.clf.regularization.cell_reg_type):
             x_all = data_all.x[:, 1:]  # do not put it on gpu yet, because they will be used batch by batch
@@ -294,10 +294,11 @@ class SurfaceNet(nn.Module):
         # Compute representations of nodes layer by layer, using *all*
         # available edges. This leads to faster computation in contrast to
         # immediately computing the final representations of each batch.
-        for i in tqdm(range(self.num_layers), ncols=50):
+        # for i in tqdm(range(self.num_layers), ncols=50):
+        for i in range(self.num_layers):
             xs = []
             for batch_size, n_id, adj in batch_loader:
-                edge_index, e_id, size = adj  # get adjacencies of current layer / hop
+                edge_index, e_id, size = adj[i]  # get adjacencies of current layer / hop
                 x = x_all[n_id].to(self.clf.temp.device)
                 x_target = x[:size[1]]
                 x = self.convs[i][0]((x, x_target), xe[e_id].to(self.clf.temp.device), edge_index.to(self.clf.temp.device))
@@ -321,7 +322,7 @@ class SurfaceNet(nn.Module):
     def inference_layer(self, data_all):
         # produces embeddings layer by layer directly for the whole graph
         # no subgraph sampling necessary
-        # only works if full graph fits in memory
+        # only works if full graph fits in VRAM
 
 
         if(self.clf.regularization.cell_reg_type):

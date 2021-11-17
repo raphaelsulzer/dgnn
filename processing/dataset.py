@@ -27,8 +27,11 @@ def getConfig(clf,mode):
     else:
         classes = mode.classes
 
-    if (mode.scan_confs[0] == -1):
+    if(mode.scan_confs == -1):
         mode.scan_confs = [0, 1, 2, 3, 4]
+    else:
+        mode.scan_confs = [mode.scan_confs]
+
 
     return path,classes,mode.scan_confs
 
@@ -174,7 +177,7 @@ def getDataset(clf,dataset,mode):
             clf.training.path, clf.training.classes, clf.training.scan_confs = getConfig(clf,clf.training)
             clf.training.files = []
 
-            models = np.loadtxt(os.path.join(clf.training.path, "train.lst"),dtype=str)[:clf.validation.shapes_per_conf_per_class]
+            models = np.loadtxt(os.path.join(clf.training.path, "train.lst"),dtype=str)[:clf.training.shapes_per_conf_per_class]
             for m in models:
                 if os.path.isfile(os.path.join(clf.training.path, "mesh", m+".off")):
                     d = {"path": os.path.join(clf.training.path), "filename": m, "category": m, "id": "", "scan_conf": ""}
@@ -184,7 +187,7 @@ def getDataset(clf,dataset,mode):
 
             clf.validation.path, clf.validation.classes, clf.validation.scan_confs = getConfig(clf,clf.validation)
             clf.validation.files = []
-            models = np.loadtxt(os.path.join(clf.training.path, "test.lst"),dtype=str)[:clf.validation.shapes_per_conf_per_class]
+            models = np.loadtxt(os.path.join(clf.training.path, "test_crop.lst"),dtype=str)[:clf.validation.shapes_per_conf_per_class]
             for m in models:
                 if os.path.isfile(os.path.join(clf.training.path, "mesh", m+".off")):
                     d = {"path": os.path.join(clf.training.path), "filename": m, "category": m, "id": "", "scan_conf": ""}

@@ -10,7 +10,7 @@ from functools import partial
 sys.path.append('..')
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..', 'utils'))
 from libmesh import check_mesh_contains
-import re
+
 
 
 def main(args):
@@ -29,8 +29,7 @@ def main(args):
 def process_path(in_path, args):
 
     in_file = os.path.basename(in_path)
-
-    modelname = re.split(r'[_.]+', in_file)[1]
+    modelname = os.path.splitext(in_file)[0]
 
     # check if there is a scan with this configuration
     # scan_file = os.path.join(args.scan_folder,
@@ -160,7 +159,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser('Sample a watertight mesh.')
 
-    parser.add_argument('--dataset_dir', type=str, default="/mnt/raphael/ModelNet10/",
+    parser.add_argument('--dataset_dir', type=str, default="/mnt/raphael/aerial/",
                         help='Path to the dataset.')
 
     parser.add_argument('--category', type=str, default=None,
@@ -171,7 +170,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_proc', type=int, default=0,
                         help='Number of processes to use.')
 
-    parser.add_argument('--scale', type=float, default=1.0,
+    parser.add_argument('--scale', type=float, default=75.0,
                         help='scale of ground truth = bounding box')
 
     parser.add_argument('--bbox_padding', type=float, default=0.,
@@ -182,7 +181,7 @@ if __name__ == '__main__':
                         help='Output path for point cloud.')
     parser.add_argument('--scan_folder', type=str,
                         help='Output path for point cloud.')
-    parser.add_argument('--pointcloud_size', type=int, default=100000,
+    parser.add_argument('--pointcloud_size', type=int, default=1000000,
                         help='Size of point cloud.')
 
     parser.add_argument('--points_folder', type=str,
@@ -195,7 +194,7 @@ if __name__ == '__main__':
     parser.add_argument('--points_sigma', type=float, default=0.05,
                         help='Standard deviation of gaussian noise added to points'
                              'samples on the surfaces.')
-    parser.add_argument('--points_padding', type=float, default=0.1,
+    parser.add_argument('--points_padding', type=float, default=0.75,
                         help='Additional padding applied to the uniformly'
                              'sampled points on both sides (in total).')
 
@@ -213,60 +212,15 @@ if __name__ == '__main__':
 
 
     args.packbits = True
-
-    if args.category is not None:
-        categories = [args.category]
-    else:
-        categories = os.listdir(args.dataset_dir)
+    args.overwrite = True
 
 
+    args.scan_folder = os.path.join(args.dataset_dir, "3_scans")    # where the scans are
+    args.gt_folder = os.path.join(args.dataset_dir, "mesh")             # where the meshes are
+    args.points_folder = os.path.join(args.dataset_dir, "eval")
+    args.pointcloud_folder = os.path.join(args.dataset_dir, "eval")
 
-    for i,c in enumerate(categories):
-        if c.startswith('.'):
-            continue
-        print("\n############## Processing {} - {}/{} ############\n".format(c,i+1,len(categories)))
+    main(args)
 
-
-
-        # args.scan_folder = os.path.join(args.dataset_dir, c, "3_scan", str(config))    # where the scans are
-        # args.gt_folder = os.path.join(args.dataset_dir, c, "2_watertight")             # where the meshes are
-        # args.points_folder = os.path.join(args.dataset_dir, c, "convonet",str(config))
-        # args.pointcloud_folder = os.path.join(args.dataset_dir, c, "convonet",str(config))
-        args.scan_folder = os.path.join(args.dataset_dir, c, "3_scans")    # where the scans are
-        args.gt_folder = os.path.join(args.dataset_dir, c, "2_watertight")             # where the meshes are
-        args.points_folder = os.path.join(args.dataset_dir, c, "eval")
-        args.pointcloud_folder = os.path.join(args.dataset_dir, c, "eval")
-
-        main(args)
-
-
-            # ### train
-            # # save a train.lst file here
-            # args.train_folder = os.path.join(args.dataset_dir, c, "train")
-            # if not os.path.exists(args.points_folder):
-            #     os.makedirs(args.points_folder)
-            # if not os.path.exists(args.pointcloud_folder):
-            #     os.makedirs(args.pointcloud_folder)
-            # # save a train_str(conf).lst file here
-            # file = open(os.path.join(args.points_folder,"train.lst"), "w")
-            # for f in os.listdir(args.train_folder):
-            #     if f.startswith('.'):
-            #         continue
-            #     file.write(f.split('.')[0].split('_')[1] + "\n")
-            # file.close()
-            #
-            # ### test
-            # # save a test.lst file here
-            # args.test_folder = os.path.join(args.dataset_dir, c, "test")
-            # if not os.path.exists(args.points_folder):
-            #     os.makedirs(args.points_folder)
-            # if not os.path.exists(args.pointcloud_folder):
-            #     os.makedirs(args.pointcloud_folder)
-            # file = open(os.path.join(args.points_folder,"test.lst"), "w")
-            # for f in os.listdir(args.test_folder):
-            #     if f.startswith('.'):
-            #         continue
-            #     file.write(f.split('.')[0].split('_')[1] + "\n")
-            # file.close()
 
 
