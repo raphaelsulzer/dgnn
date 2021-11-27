@@ -189,7 +189,7 @@ def getDataset(clf,dataset,mode):
 
             clf.validation.path, _, _ = getConfig(clf,clf.validation)
             clf.validation.files = []
-            models = np.loadtxt(os.path.join(clf.validation.path, "test.lst"),dtype=str)[:clf.validation.shapes_per_conf_per_class]
+            models = np.loadtxt(os.path.join(clf.validation.path, "test_crop.lst"),dtype=str)[:clf.validation.shapes_per_conf_per_class]
             for m in models:
                 if os.path.isfile(os.path.join(clf.validation.path, "mesh", m+".off")):
                     d = {"path": os.path.join(clf.validation.path), "filename": m, "category": m, "id": "", "scan_conf": ""}

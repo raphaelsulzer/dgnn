@@ -102,7 +102,7 @@ def training(clf):
 
     if(clf.training.load_epoch):
         # load model
-        model_file = os.path.join(clf.paths.out, "model_" + clf.training.load_epoch + ".ptm")
+        model_file = os.path.join(clf.paths.out,"models", "model_" + clf.training.load_epoch + ".ptm")
         print("\nLoad existing model at epoch ",clf.training.load_epoch)
         # # load old results df TODO: need to load it from the args.conf directory, not from the clf.files.config file!
         # clf.results_df = pd.read_csv(clf.files.results)
@@ -127,6 +127,7 @@ def inference(clf):
 
     clf.temp.device = "cuda:" + str(clf.temp.args.gpu)
     clf.temp.batch_size = clf.inference.batch_size
+    clf.temp.current_epoch = 1000 # needed in case regularization is turned on, to compute reg_loss
     # clf.regularization.reg_epoch = None
     # print("Turn of regularization for inference")
 
@@ -134,13 +135,18 @@ def inference(clf):
     clf.temp.clique_size = clf.graph.clique_sizes if clf.inference.per_layer else clf.graph.clique_sizes*clf.graph.num_hops
 
     # load one file to know the feature dimensions
+    # TODO: should however be done differently because it is quite cryptic that this
+    # is modifying clf which is in turn used to create the model
     my_loader, _,_ = prepareSample(clf, clf.inference.files[0])
     my_loader.getInfo()
+    if (clf.temp.batch_size):
+        print("\nSample neighborhoods with:\n\t-clique size {}\n\t-{} hop(s)\n\t-batch size {}\n\t-self loops {}" \
+              .format(clf.graph.clique_sizes, len(clf.graph.clique_sizes), clf.temp.batch_size, clf.graph.self_loops))
 
     ##############################
     ######### load model #########
     ##############################
-    model_file = os.path.join(clf.paths.out,"model_"+str(clf.inference.model)+".ptm")
+    model_file = os.path.join(clf.paths.out,"models","model_"+str(clf.inference.model)+".ptm")
     print("\nLOAD MODEL {}\n".format(model_file))
     model = createModel(clf)
     if(not os.path.isfile(model_file)):
@@ -160,7 +166,7 @@ def inference(clf):
     df.index.name = "scan_conf"
     results_dict['loss'] = df.copy()
     # results_dict['count'] = df.copy()
-    for key in clf.temp.eval:
+    for key in clf.temp.metrics:
         results_dict[key] = df.copy()
     for clf.temp.inference_file in tqdm(clf.inference.files, ncols=50):
 
@@ -170,17 +176,13 @@ def inference(clf):
         # try:
         loader, data, subgraph_sampler = prepareSample(clf, clf.temp.inference_file)
         loader.getInfo()
-        if (clf.temp.batch_size):
-            print("\nSample neighborhoods with:\n\t-clique size {}\n\t-{} hop(s)\n\t-batch size {}\n\t-self loops {}" \
-                  .format(clf.graph.clique_sizes, len(clf.graph.clique_sizes), clf.temp.batch_size, clf.graph.self_loops))
-
         row = data['scan_conf'] if data['scan_conf'] else str(0)
 
         prediction = trainer.inference(data, subgraph_sampler, clf)
         results_dict["loss"].loc[int(row), data["category"]] = clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum
         # results_dict["count"].loc[int(row), data["category"]] += 1
         if("prediction" in clf.inference.export):
-            my_loader.exportScore(prediction)
+            loader.exportScore(prediction)
         if("mesh" in clf.inference.export):
             mesh, eval_dict = gm.generate(data, prediction, clf)
             for key,value in eval_dict.items():
@@ -215,9 +217,10 @@ def prepareSample(clf, file):
 
 
     start = datetime.datetime.now()
+    ### shuffle has to be False, otherwise inference_layer_batch does not work correctly
     if(clf.temp.batch_size):
         batch_loader = NeighborSampler(edge_index=torch_dataset.edge_index, sizes=clf.temp.clique_size,
-                                       batch_size=clf.temp.batch_size, shuffle=True, drop_last=False, return_e_id=clf.model.edge_convs)
+                                       batch_size=clf.temp.batch_size, shuffle=False, drop_last=False, return_e_id=clf.model.edge_convs)
     else:
         batch_loader = []
     stop = datetime.datetime.now()
@@ -292,11 +295,21 @@ if __name__ == "__main__":
         os.makedirs(os.path.join(clf.paths.out,"prediction"))
     # save conf file to out
     clf.files.config = os.path.join(clf.paths.out,"config.yaml")
-    clf.files.results = os.path.join(clf.paths.out,"results.csv")
+    clf.files.results = os.path.join(clf.paths.out,"metrics","results.csv")
+
     # create the results df
-    clf.results_df = pd.DataFrame(columns=['iteration', 'epoch', 'train_loss', 'train_loss_reg', 'train_OA', 'test_loss', 'test_loss_reg', 'test_OA', 'test_iou', 'test_best_iou'])
-    clf.best_iou = 100000
-    clf.best_chamfer = 100000
+    cols = ['iteration', 'epoch',
+               'train_loss_cell', 'train_loss_reg', 'train_loss_total', 'train_OA',
+               'test_loss_cell', 'test_loss_reg', 'test_loss_total', 'test_OA',
+                'test_current_'+clf.validation.metrics[0], 'test_best_'+clf.validation.metrics[0]]
+    clf.results_df = pd.DataFrame(columns=cols)
+    if(clf.validation.metrics[0] == "loss" or clf.validation.metrics[0] == "chamfer"):
+        clf.best_metric = 100000
+    elif(clf.validation.metrics[0] == "iou" or clf.validation.metrics[0] == "oa"):
+        clf.best_metric = 0
+    else:
+        print("ERROR: {} is not a valid validation metric. Choose either loss, chamfer or iou.".format(clf.validation.metric))
+        sys.exit(1)
 
 
     ################# print time before training/classification #################
@@ -308,7 +321,7 @@ if __name__ == "__main__":
 
     ############ TRAINING #############
     if(args.training):
-        clf.temp.graph_cut = clf.validation.graph_cut; clf.temp.fix_orientation = clf.validation.fix_orientation; clf.temp.eval = clf.validation.eval
+        clf.temp.graph_cut = clf.validation.graph_cut; clf.temp.fix_orientation = clf.validation.fix_orientation; clf.temp.metrics = clf.validation.metrics
         # log output
         # copy conf file to out dir
         copyfile(args.conf, clf.files.config)
@@ -325,7 +338,7 @@ if __name__ == "__main__":
     clf.temp.inference_time = 0
     clf.temp.subgraph_time = 0
     if(args.inference):
-        clf.temp.graph_cut = clf.inference.graph_cut; clf.temp.fix_orientation = clf.inference.fix_orientation; clf.temp.eval = clf.inference.eval
+        clf.temp.graph_cut = clf.inference.graph_cut; clf.temp.fix_orientation = clf.inference.fix_orientation; clf.temp.metrics = clf.inference.metrics
         ############ INFERENCE #############
         getDataset(clf, clf.inference.dataset, "inference")
         inference(clf)

@@ -226,9 +226,9 @@ class SurfaceNet(nn.Module):
 
         return x
 
-    #######################################################
-    ################## INFERENCE FORWARDS #################
-    #######################################################
+    #####################################################
+    ################ INFERENCE FORWARDS #################
+    #####################################################
     def inference_batch_layer(self, data_all, batch_loader):
         # produces embeddings layer by layer, batch per batch
         # subgraph sampling of GRAPH.NUM_HOPS necessary
@@ -255,7 +255,7 @@ class SurfaceNet(nn.Module):
         # Compute representations of nodes layer by layer, using *all*
         # available edges. This leads to faster computation in contrast to
         # immediately computing the final representations of each batch.
-        for batch_size, n_id, adjs in tqdm(batch_loader, ncols=50):
+        for batch_size, n_id, adjs in batch_loader:
             x = x_all[n_id, :].to(self.clf.temp.device)
             for i in range(self.num_layers):
                 edge_index, e_id, size = adjs[i]
@@ -316,6 +316,7 @@ class SurfaceNet(nn.Module):
             x = x_all.to(self.clf.temp.device)
 
         # self.clf.temp.memory.append(lh.get_gpu_memory(self.clf.temp.device))
+
         return x
 
 

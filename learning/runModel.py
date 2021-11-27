@@ -243,9 +243,9 @@ class Trainer():
         ###############################################################################################################
         if(clf.regularization.reg_epoch is not None): # check if reg_epoch is not null
             if(clf.graph.additional_num_hops != 1):
-                print("ERROR: clf.graph.additional_num_hops == 1 to use regularization")
+                print("ERROR: clf.graph.additional_num_hops has to be >= 1 to use regularization")
                 sys.exit(1)
-            if (clf.temp.current_epoch >= clf.regularization.reg_epoch):
+            if(clf.temp.current_epoch >= clf.regularization.reg_epoch):
                 reg_loss = self.calcRegularization(logits_cell,data,clf, metrics)
                 loss+=reg_loss
 
@@ -308,18 +308,20 @@ class Trainer():
 
                 row['iteration'] = iterations
                 row['epoch'] = current_epoch
-                row['train_loss'] = clf.training.metrics.getCellLoss()
+                row['train_loss_cell'] = clf.training.metrics.getCellLoss()
                 row['train_loss_reg'] = clf.training.metrics.getRegLoss()
+                row['train_loss_total'] = clf.training.metrics.getRegLoss()+clf.training.metrics.getCellLoss()
                 row['train_OA'] = clf.training.metrics.getOA()
 
                 if(iterations % clf.training.print_every) == 0 or iterations == 1:
                     time=datetime.now()
                     time=time.strftime("[%H:%M:%S]")
-                    print('%s[%3d] Epoch %3d -> Train Loss (cell): %1.4f,  Train Loss (reg): %1.4f, Train OA: %3.2f%%'
+                    print('%s[%3d] Epoch %3d -> Train Loss (cell): %1.4f,  Train Loss (reg): %1.4f, Train Loss (total): %1.4f,  Train OA: %3.2f%%'
                         % (time,iterations, current_epoch,
-                           clf.training.metrics.getCellLoss(),
-                           clf.training.metrics.getRegLoss(),
-                           clf.training.metrics.getOA()))
+                           row['train_loss_cell'],
+                           row['train_loss_reg'],
+                           row['train_loss_total'],
+                           row['train_OA']))
 
                     # reinit new metrics:
                     clf.training.metrics = Metrics()
@@ -327,39 +329,58 @@ class Trainer():
                 # do testing (ie inference in my case), if this is a test epoch
                 if(iterations % clf.training.val_every) == 0:
 
-                    OA = 0;loss = 0;samples = 0;weight = 0;reg = 0;edges = 0; iou = 0;
+                    OA = 0;loss = 0;reg = 0;loss_total=0;samples = 0;weight = 0;edges = 0; current_metric = 0;
                     for i,d in enumerate(tqdm(data.validation.all, ncols=50)):
                         if(clf.validation.batch_size):
                             prediction = self.inference(d,data.validation.batches[i],clf)
                         else:
                             prediction = self.inference(d,[],clf)
-                            temp=gm.generate(d, prediction, clf)
-                            iou+=temp[1]["chamfer"]
-                            # export one shape per class
+
+                        # keep track of metrics over all scenes
+                        OA += clf.inference.metrics.OA_sum;
+                        samples += clf.inference.metrics.samples_sum
+                        reg += clf.inference.metrics.reg_sum;
+                        edges += clf.inference.metrics.edges_sum
+
+                        if("chamfer" in clf.validation.metrics or "iou" in clf.validation.metrics):
+                            mesh, eval_dict=gm.generate(d, prediction, clf)
                             if(i%clf.validation.shapes_per_conf_per_class == 0):
                                 # my_loader.exportScore(prediction)
-                                temp[0].export(os.path.join(clf.paths.out,"generation",d["filename"]+".ply"))
-                            # keep track of metrics over all scenes
-                            OA+= clf.inference.metrics.OA_sum; samples+=clf.inference.metrics.samples_sum
-                            reg+= clf.inference.metrics.reg_sum; edges+=clf.inference.metrics.edges_sum
+                                mesh.export(os.path.join(clf.paths.out,"generation",d["filename"]+".ply"))
+                            current_metric+=eval_dict[clf.temp.metrics[0]]
+                            # export one shape per class
 
                         loss += clf.inference.metrics.cell_sum; weight += clf.inference.metrics.weight_sum
 
-                    re = reg/edges if (reg>0.0 and edges>0.0) else float("nan")
+                    re = reg/edges if (reg>0.0 and edges>0.0) else 0.0
+                    loss/=weight
+                    loss_total = re+loss
 
-                    iou = iou/len(data.validation.all)
-                    #### WARNING I TURNED THIS AROUND BECAUSE MISSUSING IT AS CHAMFER ########
-                    if(iou < clf.best_iou):
-                        clf.best_iou = iou
-                        model_path = os.path.join(clf.paths.out,"model_best.ptm")
-                        torch.save(self.model.state_dict(), model_path)
-
+                    if(clf.temp.metrics[0]=="loss"):
+                        current_metric = loss_total
+                        if(current_metric < clf.best_metric):
+                            clf.best_metric = current_metric
+                            model_path = os.path.join(clf.paths.out, "models", "model_best.ptm")
+                            torch.save(self.model.state_dict(), model_path)
+                    elif(clf.temp.metrics[0]=="chamfer"):
+                        current_metric /= len(data.validation.all)
+                        if(current_metric < clf.best_metric):
+                            clf.best_metric = current_metric
+                            model_path = os.path.join(clf.paths.out, "models", "model_best.ptm")
+                            torch.save(self.model.state_dict(), model_path)
+                    elif(clf.temp.metrics[0]=="iou"):
+                        current_metric /= len(data.validation.all)
+                        if(current_metric > clf.best_metric):
+                            clf.best_metric = current_metric
+                            model_path = os.path.join(clf.paths.out, "models", "model_best.ptm")
+                            torch.save(self.model.state_dict(), model_path)
                     ## save everything in the dataframe
-                    row['test_loss'] = loss/weight
+                    row['test_loss_cell'] = loss
                     row['test_loss_reg'] = re
+                    row['test_loss_sum'] = loss_total
                     row['test_OA'] = OA*100/samples
-                    row['test_iou'] = iou
-                    row['test_best_iou'] = clf.best_iou
+                    row['test_current_'+clf.temp.metrics[0]] = current_metric
+                    row['test_best_'+clf.temp.metrics[0]] = clf.best_metric
 
                     pprint.pprint(row)
                     clf.results_df = clf.results_df.append(row,ignore_index=True)
@@ -368,7 +389,7 @@ class Trainer():
 
                 # save model
                 if (iterations % clf.training.export_every) == 0:
-                    model_path = os.path.join(clf.paths.out, "model_"+str(int(current_epoch))+".ptm")
+                    model_path = os.path.join(clf.paths.out, "models", "model_"+str(int(current_epoch))+".ptm")
                     print(EXPORTCOLOR)
                     print('[{}] Epoch {} -> Export model to {}'.format(iterations, current_epoch, model_path))
                     print(NORMALCOLOR)
@@ -395,7 +416,6 @@ class Trainer():
             elif(clf.inference.per_layer and not clf.temp.batch_size):
                 # print("\nInference per layer")
                 assert(not subgraph_loader)
-                data_inference.batch_adjs = []  # necessary to know in the calcRegularization function if data is batched or not
                 logits_cell = self.model.inference_layer(data_inference)
             elif(not clf.inference.per_layer and clf.temp.batch_size):
                 # print("\nInference per batch")
@@ -414,10 +434,10 @@ class Trainer():
             data_inference.batch_x = data_inference.x
             data_inference.batch_gt = data_inference.y
 
+            # the complete loss is now calculated at once, so even if the data was batched before, it is not used in batch mode anymore
+            data_inference.batch_adjs = []  # necessary to know in the calcRegularization function if data is batched or not
             self.calcLossAndOA(logits_cell, logits_edge, data_inference, clf, clf.inference.metrics)
 
-        else:
-            clf.results.OA_test = 0.0
 
         if(clf.training.loss == "mse"):
             logits_cell = torch.cat((1-logits_cell, logits_cell),dim=1)

@@ -14,15 +14,17 @@ from evaluate_mesh import compute_iou, compute_chamfer
 
 def graph_cut(labels,prediction,edges,clf):
 
-    dtype = np.float64
+    dtype = np.int64
+    # Internally, in the pyGCO code datatype is always converted to np.int32
+    # I would need to use my own version of GCO (or modify the one used by pyGCO) to change that
+    # Should probably be done at some point to avoid int32 overflow for larger scenes.
 
     gc = gco.GCO()
-    gc.create_general_graph(edges.max()+1, 2)
+    gc.create_general_graph(edges.max()+1, 2, energy_is_float=False)
     # data_cost = F.softmax(prediction, dim=-1)
-    # prediction[:, [0, 1]] = prediction[:, [1, 0]]
-    # data_cost = (prediction*clf.graph_cut.unary_weight).round()
-    data_cost = prediction
-    # TODO: check why graph_cut seems to produce slightly worse results with float datatype, so I can stop multiplying and rounding data_cost to use int datatype
+    prediction[:, [0, 1]] = prediction[:, [1, 0]]
+    data_cost = (prediction*clf.graph_cut.unary_weight).round()
+    # data_cost = prediction
     data_cost = np.array(data_cost,dtype=dtype)
     ### append high cost for inside for infinite cell
     # data_cost = np.append(data_cost, np.array([[-10000, 10000]]), axis=0)
@@ -57,6 +59,16 @@ def graph_cut(labels,prediction,edges,clf):
 
 
 def generate(data, prediction, clf):
+
+    """This function generates a mesh from cell predictions and evaluates the result using presampled points in (for IoU) and on the ground truth
+    mesh (for chamfer).
+    It returns the mesh (as trimesh object) and a dictionary with the evaluation metrics."""
+
+
+    # TODO: make it compatible with open scenes. This means I cannot force the infinite cells to be outside anymore.
+    # So far they are classified by the network, so could use that label, especially when regularization is turned on.
+    # First step is to remove the code where infinite cells are hard classified as outside cells. Then maybe it means I need to
+    # include infinite cells in the _3dt file to correctly retrieve their label from the network and use it in mesh generation?
 
     labels = F.log_softmax(prediction[data.y[:, 4] == 0], dim=-1).argmax(1).numpy()
 
@@ -95,12 +107,13 @@ def generate(data, prediction, clf):
     recon_mesh = trimesh.Trimesh(mdata["vertices"], mdata["facets"][interfaces],process=True)
     if(clf.temp.fix_orientation):
         trimesh.repair.fix_normals(recon_mesh)
+        # TODO: check to see if this shouldn't be rather trimesh.repair.fix_inversion (maybe it is faster)
 
     eval_dict = dict()
 
     ### watertight ###
-    if("watertight" in clf.temp.eval):
-        # TODO: this does not really give the correct result as it seems to simply count boundary edges,
+    if("watertight" in clf.temp.metrics):
+        # TODO: this does not really give the correct result, as it seems to simply count boundary edges,
         # which are also all non-manifold edges. Thus, if the mesh has any non-manifold edge, it will also be counted as non-watertight
         # maybe use Open3D for this task instead, which has support for both, non-manifold and watertight.
         eval_dict["watertight"] = int(recon_mesh.is_watertight)
@@ -109,13 +122,14 @@ def generate(data, prediction, clf):
     subfolder = data['id'] if data['id'] else data['category']
 
     ### IOU ###
-    if('iou' in clf.temp.eval):
+    if('iou' in clf.temp.metrics):
         occ_file = os.path.join(data.path, "eval", subfolder, "points.npz")
         occ = np.load(occ_file)
         occ_points = occ["points"]
         gt_occ = occ["occupancies"]
         gt_occ = np.unpackbits(gt_occ)[:occ_points.shape[0]]
-        gt_occ = gt_occ.astype(np.float32)
+        # gt_occ = gt_occ.astype(np.float32)
+        gt_occ = gt_occ.astype(np.bool)
 
         try:
             recon_occ = check_mesh_contains(recon_mesh,occ_points)
@@ -125,7 +139,7 @@ def generate(data, prediction, clf):
             eval_dict["iou"] = 0.0
 
     ### Chamfer ###
-    if('chamfer' in clf.temp.eval):
+    if('chamfer' in clf.temp.metrics):
         points_file = os.path.join(data.path, "eval", subfolder, "pointcloud.npz")
         points = np.load(points_file)
         gt_points = points["points"]

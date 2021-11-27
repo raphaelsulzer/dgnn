@@ -56,6 +56,10 @@ def compute_iou(occ1, occ2):
 
 def compute_chamfer(points1,points2):
 
+    # DeepSDF has very similar implementation but squares the distances? why? they shouldn't be negative
+    # https://github.com/facebookresearch/DeepSDF/blob/main/deep_sdf/metrics/chamfer.py
+
+
     k1 = KDTree(points1)
     k2 = KDTree(points2)
 
