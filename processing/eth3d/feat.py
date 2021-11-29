@@ -12,13 +12,11 @@ def main(args):
     # extract features from mpu
     command = [args.sure_dir + "/feat",
                "-w", str(args.wdir),
-               "-i", str(args.i),
+               "-i", str(args.o),
                "-o", str(args.o),
-               "-g", str(args.gt),
-               "--gclose", str(0),
                "-s", "omvs",
-               "-e", "i"]
-    print("run command: ", command)
+               "--export", 'npz']
+    print("run command: ", *command)
     p = subprocess.Popen(command)
     p.wait()
 
@@ -31,7 +29,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='reconbench evaluation')
 
 
-    parser.add_argument('-d', '--dataset_dir', type=str, default="/mnt/raphael/",
+    parser.add_argument('-d', '--dataset_dir', type=str, default="/mnt/raphael/ETH3D",
                         help='working directory which should include the different scene folders.')
     parser.add_argument('--overwrite', type=int, default=0,
                         help='overwrite existing files')
@@ -49,12 +47,13 @@ if __name__ == "__main__":
     if args.category is not None:
         categories = [args.category]
     else:
-        categories = os.listdir(os.path.join(args.dataset_dir,'ETH3D_cropped'))
+        categories = os.listdir(args.dataset_dir)
     if 'x' in categories:
         categories.remove('x')
 
     # scan all training data with random configuration from 0,1,2
     # and test data with 0,1,2
+
 
     ### scanner confs
     # 0 (easy) --cameras 15 --points 12000 --noise 0.000 --outliers 0.0
@@ -68,28 +67,23 @@ if __name__ == "__main__":
         print("\n############## Processing {}/{} ############\n".format(i+1,len(categories)))
 
         ### train
-        args.gt_input = os.listdir(os.path.join(args.dataset_dir, 'ETH3D_cropped', c, "mesh"))
 
-        scan_dir = os.path.join(args.dataset_dir,'ETH3D',c)
+        args.wdir = os.path.join(args.dataset_dir,c)
+        args.o = os.path.join("scan",c)
 
-        for gt in args.gt_input:
-            args.gt = os.path.join("..","..","ETH3D_cropped",c,"mesh",gt)
-            args.wdir = os.path.join(args.dataset_dir,"ETH3D",c)
-            args.i = gt[:-4]
-            args.o = os.path.join("..","..","ETH3D_cropped",c,"scan",args.i)
+        os.makedirs(os.path.join(args.dataset_dir,c,"scan"),exist_ok=True)
 
-            os.makedirs(os.path.join(args.dataset_dir,"ETH3D_cropped",c,"scan"),exist_ok=True)
+        main(args)
 
-            main(args)
 
-            # # move
-            # in_dir =  os.path.join(args.dataset_dir,c,"gt",i[:-4]+"*")
-            # out_dir = os.path.join(conf_dir,name)
-            # if not os.path.exists(out_dir):
-            #     os.makedirs(out_dir)
-            # for f in glob.glob(in_dir):
-            #     p = subprocess.Popen(["mv",f,out_dir])
-            #     p.wait()
+        # # move
+        # in_dir =  os.path.join(args.dataset_dir,c,"gt",i[:-4]+"*")
+        # out_dir = os.path.join(conf_dir,name)
+        # if not os.path.exists(out_dir):
+        #     os.makedirs(out_dir)
+        # for f in glob.glob(in_dir):
+        #     p = subprocess.Popen(["mv",f,out_dir])
+        #     p.wait()
 
         # # night_stand to nightstand
         # in_dir =  os.path.join(args.dataset_dir,c,"train")

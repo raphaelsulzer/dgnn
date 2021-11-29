@@ -263,7 +263,7 @@ if __name__ == "__main__":
                         help='do training')
     parser.add_argument('-i', '--inference', action='store_true',
                         help='do inference after training')
-    parser.add_argument('-c', '--conf', type=str, default="../configs/pretrained/reconbench.yaml",
+    parser.add_argument('-c', '--conf', type=str, default="configs/pretrained/reconbench.yaml",
                         help='which config to load')
     parser.add_argument('--gpu', type=int, default=0,
                         help='on which gpu device [0,1] to train. default: 0')
@@ -271,6 +271,8 @@ if __name__ == "__main__":
 
     # args.conf = 'reconbench'
 
+    if(not os.path.isabs(args.conf)):
+        args.conf = os.path.join(os.path.dirname(__file__),args.conf)
 
     ################# load conf #################
     clf = Munch.fromYAML(open(args.conf, 'r'))
@@ -289,10 +291,8 @@ if __name__ == "__main__":
 
 
     ################# create the model dir #################
-    if(not os.path.exists(os.path.join(clf.paths.out,"generation"))):
-        os.makedirs(os.path.join(clf.paths.out,"generation"))
-    if(not os.path.exists(os.path.join(clf.paths.out,"prediction"))):
-        os.makedirs(os.path.join(clf.paths.out,"prediction"))
+    os.makedirs(os.path.join(clf.paths.out,"generation"), exist_ok=True)
+    os.makedirs(os.path.join(clf.paths.out,"prediction"), exist_ok=True)
     # save conf file to out
     clf.files.config = os.path.join(clf.paths.out,"config.yaml")
     clf.files.results = os.path.join(clf.paths.out,"metrics","results.csv")

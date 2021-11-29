@@ -209,7 +209,7 @@ def getDataset(clf,dataset,mode):
                 return
             else:
                 clf.inference.files = []
-                models = np.loadtxt(os.path.join(clf.inference.path, "test.lst"), dtype=str)[
+                models = np.loadtxt(os.path.join(clf.inference.path, "test_crop.lst"), dtype=str)[
                          :clf.inference.shapes_per_conf_per_class]
                 for m in models:
                     if os.path.isfile(os.path.join(clf.inference.path, "mesh", m + ".off")):

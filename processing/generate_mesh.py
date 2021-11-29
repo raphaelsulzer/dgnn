@@ -69,13 +69,13 @@ def generate(data, prediction, clf):
     # So far they are classified by the network, so could use that label, especially when regularization is turned on.
     # First step is to remove the code where infinite cells are hard classified as outside cells. Then maybe it means I need to
     # include infinite cells in the _3dt file to correctly retrieve their label from the network and use it in mesh generation?
+    # UPDATE: all I actually need to do is when I don't use the graph-cut, use the predicted labels for the infinite cell
+    # however, I cannot do that with the current _3dt file, because I cannot retrieve the label of a specific infinite cell, because all infinite cells are the same in this current file
 
     labels = F.log_softmax(prediction[data.y[:, 4] == 0], dim=-1).argmax(1).numpy()
 
     ### reconstruction
     mfile = os.path.join(data.path, "gt", data.scan_conf, data.id, data.filename + "_3dt.npz")
-
-
 
     mdata = np.load(mfile)
     assert(len(labels)==len(mdata["tetrahedra"]))

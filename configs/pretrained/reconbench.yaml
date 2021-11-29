@@ -43,7 +43,7 @@ inference:
   model: best
   graph_cut: true
   fix_orientation: true
-  eval: ["iou","chamfer"]
+  metrics: ["iou","chamfer"]
   export: ["mesh"]
 validation:
   dataset: reconbench
@@ -54,7 +54,7 @@ validation:
   val_every: 2
   graph_cut: true
   fix_orientation: true
-  eval: [ "iou","chamfer"]
+  metrics: [ "iou","chamfer"]
 training:
   dataset: modelnet
   classes: null
