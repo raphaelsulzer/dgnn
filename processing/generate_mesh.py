@@ -116,7 +116,9 @@ def generate(data, prediction, clf):
         # TODO: this does not really give the correct result, as it seems to simply count boundary edges,
         # which are also all non-manifold edges. Thus, if the mesh has any non-manifold edge, it will also be counted as non-watertight
         # maybe use Open3D for this task instead, which has support for both, non-manifold and watertight.
-        eval_dict["watertight"] = int(recon_mesh.is_watertight)
+        # UPDATE: actually recon_mesh.as_open3d works
+        eval_dict["watertight"] = int(recon_mesh.as_open3d.is_watertight())
+        # eval_dict["watertight"] = int(recon_mesh.is_watertight)
         # print("WARNING: Mesh is not watertight: ", data['filename'])
 
     subfolder = data['id'] if data['id'] else data['category']

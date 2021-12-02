@@ -129,6 +129,7 @@ To train or reconstruct a custom dataset you need to provide for each object or 
 containing a `points`, `normals` and `sensor_position` field (see `data/reconbench/3_scan/` for examples of
 such files). The `normals` field is not actually used in this work but has to be present in the file. 
 It can e.g. be set to contain zero vectors. The datatype of all fields has to be `np.float64`.
+
 Furthermore you need several files containing the 3D Delaunay triangulation and feature information for each object
 or scene.
 

@@ -76,7 +76,6 @@ def getDataset(clf,dataset,mode):
         elif(mode == "inference"):
 
             clf.inference.path, clf.inference.classes, clf.inference.scan_confs = getConfig(clf,clf.inference)
-
             temp = []
             if(clf.inference.files is not None):
                 for f in clf.inference.files:
@@ -99,9 +98,6 @@ def getDataset(clf,dataset,mode):
         else:
             print("ERROR: not a valid method for getDataset.py")
             sys.exit(1)
-
-
-        a=5
 
 
     elif(dataset == "ShapeNetManifoldPlus"):
@@ -131,8 +127,6 @@ def getDataset(clf,dataset,mode):
         else:
             print("NOT IMPLEMENTED ERROR: can't do inference/validation on ShapeNetManifoldPlus dataset!")
             sys.exit(1)
-
-        a = 5
 
     elif (dataset == "reconbench"):
 
@@ -178,7 +172,6 @@ def getDataset(clf,dataset,mode):
 
             clf.training.path, _, _ = getConfig(clf,clf.training)
             clf.training.files = []
-
             models = np.loadtxt(os.path.join(clf.training.path, "train.lst"),dtype=str)[:clf.training.shapes_per_conf_per_class]
             for m in models:
                 if os.path.isfile(os.path.join(clf.training.path, "mesh", m+".off")):
