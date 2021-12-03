@@ -102,10 +102,10 @@ if __name__ == "__main__":
         categories = [args.category]
     else:
         categories = os.listdir(args.dataset_dir)
+    # if 'x' in categories:
+    #     categories.remove('x')
 
 
-    # scan all training data with random configuration from 0,1,2
-    # and test data with 0,1,2
 
     ### scanner confs
     # 0 (easy) --cameras 15 --points 12000 --noise 0.000 --outliers 0.0
