@@ -5,7 +5,6 @@ import gc
 import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'learning'))
-import surfaceNet as sage
 import surfaceNetEdgePrediction as epsage
 import surfaceNetStaticEdgeFilters as efsage
 
@@ -40,7 +39,7 @@ def training(clf):
         # print("\t-",graph.split("/")[-1])
         try:
             my_loader.run(graph)
-            all_graphs.append(Data(x=my_loader.features, y=my_loader.gt,
+            all_graphs.append(Data(x=my_loader.features, y=my_loader.gt, infinite=my_loader.infinite,
                      edge_index=my_loader.edge_lists, edge_attr=my_loader.edge_features, pos=None))
         except:
             print("WARNING: Couldn't load object ",graph)
@@ -209,7 +208,7 @@ def prepareSample(clf, file):
     my_loader.run(file)
 
 
-    torch_dataset = Data(x=my_loader.features, y=my_loader.gt, edge_index=my_loader.edge_lists,
+    torch_dataset = Data(x=my_loader.features, y=my_loader.gt, infinite=my_loader.infinite, edge_index=my_loader.edge_lists,
                    edge_attr=my_loader.edge_features, path=my_loader.path, filename= my_loader.filename, category=my_loader.category, id=my_loader.id, scan_conf=my_loader.scan_conf)
 
     if(not clf.model.edge_convs and clf.graph.self_loops):
@@ -236,15 +235,16 @@ def createModel(clf):
 
     if (clf.model.type == "sage" and clf.model.edge_prediction):
         model = epsage.SurfaceNet(clf=clf)
-    elif(clf.model.type == "sage" and not clf.model.edge_prediction and clf.model.edge_convs):
-        model = efsage.SurfaceNet(clf=clf)
+    # elif(clf.model.type == "sage" and not clf.model.edge_prediction and clf.model.edge_convs):
+    elif(clf.model.type == "sage" and not clf.model.edge_prediction):
+        model = efsage.SurfaceNet(clf=clf)  # this works with and without edge features
     # elif (clf.model.type == "sage" and clf.model.edge_convs):
     #     if (clf.model.concatenate):
     #         model = cefsage.SurfaceNet(n_node_features=fs, clf=clf)
     #     else:
     #         model = efsage.SurfaceNet(n_node_features=fs, clf=clf)
-    elif(clf.model.type == "sage" and not clf.model.edge_prediction and not clf.model.edge_convs):
-        model = sage.SurfaceNet(clf=clf)
+    # elif(clf.model.type == "sage" and not clf.model.edge_prediction and not clf.model.edge_convs):
+    #     model = sage.SurfaceNet(clf=clf)
     else:
         print("\nERROR: {} is not a valid model_name".format(clf.model.type))
         sys.exit(1)
@@ -293,6 +293,8 @@ if __name__ == "__main__":
     ################# create the model dir #################
     os.makedirs(os.path.join(clf.paths.out,"generation"), exist_ok=True)
     os.makedirs(os.path.join(clf.paths.out,"prediction"), exist_ok=True)
+    os.makedirs(os.path.join(clf.paths.out,"metrics"), exist_ok=True)
+    os.makedirs(os.path.join(clf.paths.out,"models"), exist_ok=True)
     # save conf file to out
     clf.files.config = os.path.join(clf.paths.out,"config.yaml")
     clf.files.results = os.path.join(clf.paths.out,"metrics","results.csv")

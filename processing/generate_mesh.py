@@ -6,7 +6,7 @@ import os, sys
 import trimesh
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
 from libmesh import check_mesh_contains
-import gco
+import gco # pip install gco-wrapper
 import torch.nn.functional as F
 from evaluate_mesh import compute_iou, compute_chamfer
 
@@ -72,7 +72,7 @@ def generate(data, prediction, clf):
     # UPDATE: all I actually need to do is when I don't use the graph-cut, use the predicted labels for the infinite cell
     # however, I cannot do that with the current _3dt file, because I cannot retrieve the label of a specific infinite cell, because all infinite cells are the same in this current file
 
-    labels = F.log_softmax(prediction[data.y[:, 4] == 0], dim=-1).argmax(1).numpy()
+    labels = F.log_softmax(prediction[data.infinite == 0], dim=-1).argmax(1).numpy()
 
     ### reconstruction
     mfile = os.path.join(data.path, "gt", data.scan_conf, data.id, data.filename + "_3dt.npz")
@@ -86,7 +86,7 @@ def generate(data, prediction, clf):
         mask = (edges >= 0).all(axis=1)
         gc_edges = edges[mask]
         try:
-            labels=graph_cut(labels,prediction[data.y[:, 4] == 0],gc_edges,clf)
+            labels=graph_cut(labels,prediction[data.infinite == 0],gc_edges,clf)
         except:
             print("WARNING: Graph cut for {} didn't work. Using raw predictions for mesh generation.".format(data.filename))
 

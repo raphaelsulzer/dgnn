@@ -1,13 +1,13 @@
 import argparse, subprocess, os, glob
-
+from tqdm import tqdm
 
 
 def main(args):
 
-    # outfile = os.path.join(args.wdir,args.o+".npz")
-    # if(os.path.isfile(outfile) and not args.overwrite):
-    #     print("exists!")
-    #     return
+    outfile = os.path.join(args.wdir,"gt",args.i.split('/')[1]+"_labels.txt")
+    if(os.path.isfile(outfile) and not args.overwrite):
+        print("exists!")
+        return
 
     # extract features from mpu
     command = [args.sure_dir + "/feat",
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     #                     help='The scan conf')
 
 
-    parser.add_argument('--category', type=str, default='x',
+    parser.add_argument('--category', type=str, default=None,
                         help='Indicate the category class')
 
     args = parser.parse_args()
@@ -51,7 +51,8 @@ if __name__ == "__main__":
         categories = [args.category]
     else:
         categories = os.listdir(args.dataset_dir)
-
+    if 'x' in categories:
+        categories.remove('x')
 
     # scan all training data with random configuration from 0,1,2
     # and test data with 0,1,2
@@ -62,23 +63,27 @@ if __name__ == "__main__":
     # 2 (hard) --cameras 15 --points 12000 --noise 0.005 --outliers 0.33
     # 3 (convonet) --cameras 50 --points 3000 --noise 0.005 --outliers 0.0
 
-    for i,c in enumerate(categories):
+    for j,c in enumerate(categories):
         if c.startswith('.'):
             continue
-        print("\n############## Processing {}/{} ############\n".format(i+1,len(categories)))
-
         ### train
         args.input = os.listdir(os.path.join(args.dataset_dir, c))
         # conf_dir = os.path.join(args.dataset_dir,c,"gt",str(args.conf))
         # if not os.path.exists(conf_dir):
         #     os.makedirs(conf_dir)
-
-        for i in args.input:
+        for n,i in enumerate(args.input):
+            print("[{}/{}][{}/{}]".format(j+1,len(categories),n+1,len(args.input)))
             args.wdir = os.path.join(args.dataset_dir, c,i)
             args.i = os.path.join("scan",str(args.scan_conf))
             args.o = str(args.scan_conf)
             args.g = os.path.join("mesh",'mesh.off')
-            main(args)
+            try:
+                main(args)
+            except:
+                pass
+
+
+
 
             # # move
             # in_dir =  os.path.join(args.dataset_dir,c,"gt",name+"*")

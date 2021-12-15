@@ -12,7 +12,7 @@ def main(args):
     # extract features from mpu
     command = [args.sure_dir + "/feat",
                "-w", str(args.wdir),
-               "-i", str(args.i),
+               "-i", str(args.i[:-4]),
                "-o", str(args.o),
                "-g", str(args.g),
                "-s", "npz",
@@ -22,7 +22,6 @@ def main(args):
     p.wait()
 
     a=5
-
 
 
 if __name__ == "__main__":

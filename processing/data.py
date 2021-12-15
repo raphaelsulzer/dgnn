@@ -87,6 +87,39 @@ class dataLoader:
 
         return self.n_nodes
 
+    def run(self, d):
+
+        self.path = d["path"]
+        self.filename = d["filename"]
+        self.category = d["category"]
+        self.id = d["id"]
+        self.scan_conf = d["scan_conf"]
+
+        # self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
+        self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
+
+
+        # read vertex features and labels
+        # self.readNodeData()
+        self.readNodeData_bin()
+
+        # read adjacencies and edge features
+        # self.readAdjacencies()
+        self.readAdjacencies_bin()
+
+        # read edge features
+        if(self.read_edge_features):
+            # self.readEdgeData()
+            self.readEdgeData_bin()
+
+        # standardize all features
+        if(self.clf.features.scaling):
+            self.standardizeFeatures()
+
+        self.toTorch()
+        self.n_nodes+=len(self.features)
+
+
     def readNodeData(self):
 
         ### print file for debugging
@@ -94,6 +127,9 @@ class dataLoader:
 
         self.gt = pd.read_csv(filepath_or_buffer=self.basefilename+"_labels.txt", sep = ' ', header = 0,
                         index_col = 0, dtype = np.float32)
+        self.gt = torch.tensor(self.gt.values, dtype=torch.float)
+        self.infinite = self.gt[:,4].type(torch.bool)
+
 
         self.features = pd.DataFrame()
 
@@ -158,7 +194,100 @@ class dataLoader:
 
         assert(len(self.gt) == len(self.features))
         assert(not self.features.isnull().values.any())
-        assert(not self.gt.isnull().values.any())
+        assert(not self.gt.isnan().any())
+
+        return self.features
+
+
+    def readNodeData_bin(self):
+
+        ### print file for debugging
+        # print(self.basefilename)
+
+        ####################################################
+        ################### ground truth ###################
+        ####################################################
+        temp = np.load(self.basefilename+"_labels.npz")
+        self.gt = torch.Tensor([temp["inside_perc"],temp["outside_perc"]]).type(torch.float)
+        self.gt = torch.transpose(self.gt,1,0)
+        self.infinite = torch.from_numpy(temp["infinite"]).type(torch.bool)
+
+        ####################################################
+        ##################### features #####################
+        ####################################################
+        self.features = pd.DataFrame()
+
+        temp = np.load(self.basefilename+"_cgeom.npz")
+        self.mean_edge = (temp["longest_edge"].sum() + temp["shortest_edge"].sum()) / (2*len(temp["longest_edge"]))
+
+        if('shape' in self.clf.features.node_features):
+            for key,value in temp.items():
+                self.features[key] = value
+
+
+        if('vertex' in self.clf.features.node_features):
+            temp = np.load(self.basefilename + "_cbvf.npz")
+            for key,value in temp.items():
+                self.features[key] = value
+            if('count' not in self.clf.features.node_features):
+                self.features.drop(labels=['cb_vertex_inside_count','cb_vertex_outside_count','cb_vertex_last_count'], axis='columns', inplace=True)
+            if('min' not in self.clf.features.node_features):
+                self.features.drop(labels=['cb_vertex_inside_dist_min','cb_vertex_outside_dist_min','cb_vertex_last_dist_min'], axis='columns', inplace=True)
+            if('max' not in self.clf.features.node_features):
+                self.features.drop(labels=['cb_vertex_inside_dist_max','cb_vertex_outside_dist_max','cb_vertex_last_dist_max'], axis='columns', inplace=True)
+            if('sum' not in self.clf.features.node_features):
+                self.features.drop(labels=['cb_vertex_inside_dist_sum','cb_vertex_outside_dist_sum','cb_vertex_last_dist_sum'], axis='columns', inplace=True)
+
+        if('facet' in self.clf.features.node_features):
+            temp = np.load(self.basefilename+"_cbff.npz")
+            for key,value in temp.items():
+                self.features[key] = value
+            if('count' not in self.clf.features.node_features):
+                temp.drop(labels=['cb_facet_inside_first_count','cb_facet_outside_first_count','cb_facet_last_first_count',
+                                  'cb_facet_inside_second_count','cb_facet_outside_second_count','cb_facet_last_second_count'], axis='columns', inplace=True)
+            if('min' not in self.clf.features.node_features):
+                temp.drop(labels=['cb_facet_inside_first_dist_min','cb_facet_outside_first_dist_min','cb_facet_last_first_dist_min',
+                                  'cb_facet_inside_second_dist_min','cb_facet_outside_second_dist_min', 'cb_facet_last_second_dist_min'], axis='columns', inplace=True)
+            if('max' not in self.clf.features.node_features):
+                temp.drop(labels=['cb_facet_inside_first_dist_max','cb_facet_outside_first_dist_max', 'cb_facet_last_first_dist_max',
+                                  'cb_facet_inside_second_dist_max','cb_facet_outside_second_dist_max', 'cb_facet_last_second_dist_max'], axis='columns', inplace=True)
+            if('sum' not in self.clf.features.node_features):
+                temp.drop(labels=['cb_facet_inside_first_dist_sum','cb_facet_outside_first_dist_sum','cb_facet_last_first_dist_sum',
+                                  'cb_facet_inside_second_dist_sum','cb_facet_outside_second_dist_sum','cb_facet_last_second_dist_sum'], axis='columns', inplace=True)
+
+        if('last' not in self.clf.features.node_features):
+            if ('vertex' in self.clf.features.node_features):
+                if ('count' in self.clf.features.node_features):
+                    self.features.drop(labels=['cb_vertex_last_count'], axis='columns', inplace=True)
+                if ('min' in self.clf.features.node_features):
+                    self.features.drop(labels=['cb_vertex_last_dist_min'], axis='columns', inplace=True)
+                if ('max' in self.clf.features.node_features):
+                    self.features.drop(labels=['cb_vertex_last_dist_max'], axis='columns', inplace=True)
+                if ('sum' in self.clf.features.node_features):
+                    self.features.drop(labels=['cb_vertex_last_dist_sum'], axis='columns', inplace=True)
+            if ('facet' in self.clf.features.node_features):
+                if('count' in self.clf.features.node_features):
+                    self.features.drop(labels=['cb_facet_last_first_count','cb_facet_last_second_count'], axis='columns', inplace=True)
+                if('min' in self.clf.features.node_features):
+                    self.features.drop(labels=['cb_facet_last_first_dist_min','cb_facet_last_second_dist_min'], axis='columns', inplace=True)
+                if('max' in self.clf.features.node_features):
+                    self.features.drop(labels=['cb_facet_last_first_dist_max','cb_facet_last_second_dist_max'], axis='columns', inplace=True)
+                if('sum' in self.clf.features.node_features):
+                    self.features.drop(labels=['cb_facet_last_first_dist_sum','cb_facet_last_second_dist_sum'], axis='columns', inplace=True)
+
+        # put a copy of the loss normalization feature at the beginning of the feature dataframe
+        if(self.clf.regularization.cell_reg_type):
+            self.features.insert(0, "reg_"+self.clf.regularization.cell_reg_type, self.features[self.clf.regularization.cell_reg_type],allow_duplicates=False)
+
+        self.node_feature_names = list(self.features.columns.values)
+
+
+        assert(self.gt.shape[0] == self.features.shape[0])
+        assert(not self.features.isnull().values.any())
+        assert(not self.gt.isnan().any())
+
+        return self.features
+
 
     def readEdgeData(self):
 
@@ -221,8 +350,73 @@ class dataLoader:
 
         self.edge_feature_names = list(self.edge_features.columns.values)
 
+        assert (self.edge_lists.shape[1] == len(self.edge_features))
         assert(not self.edge_features.isnull().values.any())
 
+
+
+    def readEdgeData_bin(self):
+
+        self.edge_features = pd.DataFrame()
+        if('shape' in self.clf.features.edge_features):
+            temp = np.load(self.basefilename+"_fgeom.npz")
+            for key,value in temp.items():
+                self.edge_features[key] = value
+
+        if('vertex' in self.clf.features.edge_features):
+            temp = np.load(self.basefilename+"_fbvf.npz")
+            for key,value in temp.items():
+                self.edge_features[key] = value
+            if('count' not in self.clf.features.edge_features):
+                temp.drop(labels=['fb_vertex_inside_count','fb_vertex_outside_count'], axis='columns', inplace=True)
+            if('min' not in self.clf.features.edge_features):
+                temp.drop(labels=['fb_vertex_inside_dist_min','fb_vertex_outside_dist_min'], axis='columns', inplace=True)
+            if('max' not in self.clf.features.edge_features):
+                temp.drop(labels=['fb_vertex_inside_dist_max','fb_vertex_outside_dist_max','fb_vertex_last_dist_max'], axis='columns', inplace=True)
+            if('sum' not in self.clf.features.edge_features):
+                temp.drop(labels=['fb_vertex_inside_dist_sum','fb_vertex_outside_dist_sum'], axis='columns', inplace=True)
+
+        if('facet' in self.clf.features.edge_features):
+            temp = np.load(self.basefilename+"_fbff.npz")
+            for key,value in temp.items():
+                self.edge_features[key] = value
+            if('count' not in self.clf.features.edge_features):
+                temp.drop(labels=['fb_facet_inside_count','fb_facet_outside_count'], axis='columns', inplace=True)
+            if('min' not in self.clf.features.edge_features):
+                temp.drop(labels=['fb_facet_inside_dist_min','fb_facet_outside_dist_min'], axis='columns', inplace=True)
+            if('max' not in self.clf.features.edge_features):
+                temp.drop(labels=['fb_facet_inside_dist_max','fb_facet_outside_dist_max','fb_facet_last_dist_max'], axis='columns', inplace=True)
+            if('sum' not in self.clf.features.edge_features):
+                temp.drop(labels=['fb_facet_inside_dist_sum','fb_facet_outside_dist_sum'], axis='columns', inplace=True)
+
+        if('last' not in self.clf.features.edge_features):
+            if ('vertex' in self.clf.features.edge_features):
+                if ('count' in self.clf.features.edge_features):
+                    self.edge_features.drop(labels=['fb_vertex_last_count'], axis='columns', inplace=True)
+                if ('min' in self.clf.features.edge_features):
+                    self.edge_features.drop(labels=['fb_vertex_last_dist_min'], axis='columns', inplace=True)
+                if ('max' in self.clf.features.edge_features):
+                    self.edge_features.drop(labels=['fb_vertex_last_dist_max'], axis='columns', inplace=True)
+                if ('sum' in self.clf.features.edge_features):
+                    self.edge_features.drop(labels=['fb_vertex_last_dist_sum'], axis='columns', inplace=True)
+            if ('facet' in self.clf.features.edge_features):
+                if('count' in self.clf.features.edge_features):
+                    self.edge_features.drop(labels=['fb_facet_last_count'], axis='columns', inplace=True)
+                if('min' in self.clf.features.edge_features):
+                    self.edge_features.drop(labels=['fb_facet_last_dist_min'], axis='columns', inplace=True)
+                if('max' in self.clf.features.edge_features):
+                    self.edge_features.drop(labels=['fb_facet_last_dist_max'], axis='columns', inplace=True)
+                if('sum' in self.clf.features.edge_features):
+                    self.edge_features.drop(labels=['fb_facet_last_dist_sum'], axis='columns', inplace=True)
+
+        # put a copy of the normalization feature at the beginning of the feature dataframe
+        if(self.clf.regularization.reg_type):
+            self.edge_features.insert(0, "reg_"+self.clf.regularization.reg_type, self.edge_features[self.clf.regularization.reg_type],allow_duplicates=False)
+
+        self.edge_feature_names = list(self.edge_features.columns.values)
+
+        assert (self.edge_lists.shape[1] == len(self.edge_features))
+        assert(not self.edge_features.isnull().values.any())
 
     def readAdjacencies(self):
 
@@ -240,6 +434,16 @@ class dataLoader:
             f.close()
 
         self.edge_lists = torch.Tensor([self.edge_lists[0],self.edge_lists[1]]).type(torch.LongTensor)
+        a=5
+
+    def readAdjacencies_bin(self):
+
+        temp = np.load(self.basefilename+"_adjacencies.npz")
+        self.edge_lists = torch.from_numpy(temp["adjacencies"]).type(torch.LongTensor)
+        self.edge_lists = torch.transpose(self.edge_lists,1,0)
+        a=5
+
+
 
 
     def standardizeFeatures(self):
@@ -312,40 +516,12 @@ class dataLoader:
 
     def toTorch(self):
 
-        self.gt = torch.tensor(self.gt.values, dtype=torch.float)
+        # self.gt = torch.tensor(self.gt.values, dtype=torch.float)
         self.features = torch.tensor(self.features.values, dtype=torch.float)
         if(self.read_edge_features):
             self.edge_features = torch.tensor(self.edge_features.values, dtype=torch.float)
         else:
             self.edge_features = torch.empty(1,1, dtype=torch.float)
-
-
-    def run(self, d):
-
-        self.path = d["path"]
-        self.filename = d["filename"]
-        self.category = d["category"]
-        self.id = d["id"]
-        self.scan_conf = d["scan_conf"]
-
-        # self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
-        self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
-
-
-        # read vertex features and labels
-        self.readNodeData()
-        # read adjacencies and edge features
-        self.readAdjacencies()
-        # read edge features
-        if(self.read_edge_features):
-            self.readEdgeData()
-            assert(self.edge_lists.shape[1]==len(self.edge_features))
-        # standardize all features
-        if(self.clf.features.scaling):
-            self.standardizeFeatures()
-
-        self.toTorch()
-        self.n_nodes+=len(self.features)
 
     def exportScore(self, prediction):
 

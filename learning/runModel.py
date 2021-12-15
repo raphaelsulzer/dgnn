@@ -174,8 +174,11 @@ class Trainer():
                 # input is always expected in log-probabilities (hence log_softmax) while target is expected in probabilities
                 cell_loss = F.kl_div(F.log_softmax(logits_cell, dim=-1), data.batch_gt[:, :2].to(clf.temp.device), reduction='none')
                 cell_loss = torch.sum(cell_loss, dim=1)  # cf. formula for kl_div, summing over X (the dimensions)
+                # metrics.addOAItem(
+                #     torch.sum(data.batch_gt[:, 2] == F.log_softmax(logits_cell, dim=-1).argmax(1).cpu()).item(),
+                #     data.batch_x.shape[0])
                 metrics.addOAItem(
-                    torch.sum(data.batch_gt[:, 2] == F.log_softmax(logits_cell, dim=-1).argmax(1).cpu()).item(),
+                    torch.sum((data.batch_gt[:,0]>data.batch_gt[:,1]).type(torch.int64) == F.log_softmax(logits_cell, dim=-1).argmax(1).cpu()).item(),
                     data.batch_x.shape[0])
             elif(clf.training.loss == "bce"):
                 # supervise with graph cut label
@@ -377,7 +380,7 @@ class Trainer():
                     ## save everything in the dataframe
                     row['test_loss_cell'] = loss
                     row['test_loss_reg'] = re
-                    row['test_loss_sum'] = loss_total
+                    row['test_loss_total'] = loss_total
                     row['test_OA'] = OA*100/samples
                     row['test_current_'+clf.temp.metrics[0]] = current_metric
                     row['test_best_'+clf.temp.metrics[0]] = clf.best_metric

@@ -26,7 +26,7 @@ def main(args):
         cameras = 50
         noise = 0.005
         outliers = 0.0
-    elif(args.conf == 4): # convonet configuration, 10 cameras
+    elif(args.conf == 4): # convonet configuration, 10 cameras, same as 42 but oriented normals with sensor
         points = 3000
         cameras = 10
         noise = 0.005
