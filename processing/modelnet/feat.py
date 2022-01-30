@@ -4,10 +4,10 @@ import argparse, subprocess, os, glob
 
 def main(args):
 
-    # outfile = os.path.join(args.wdir,args.o+".npz")
-    # if(os.path.isfile(outfile) and not args.overwrite):
-    #     print("exists!")
-    #     return
+    outfile = os.path.join(args.wdir,'gt',str(args.conf),args.o+"_3dt.npz")
+    if(os.path.isfile(outfile) and not args.overwrite):
+        print("exists!")
+        return
 
     # extract features from mpu
     command = [args.sure_dir + "/feat",
@@ -15,7 +15,8 @@ def main(args):
                "-i", str(args.i),
                "-o", str(args.o),
                "-g", str(args.g),
-               "-s", "npz"]
+               "-s", "npz",
+               "-e",""]
     print("run command: ", command)
     p = subprocess.Popen(command)
     p.wait()
@@ -35,7 +36,7 @@ if __name__ == "__main__":
                         help='overwrite existing files')
     parser.add_argument('--sure_dir', type=str, default="/home/raphael/cpp/surfaceReconstruction/build/release",
                         help='Indicate the sure build directory, pointing to .../build/release folder starting from user_dir')
-    parser.add_argument('--conf', type=int, default=4,
+    parser.add_argument('--conf', type=int, default=42,
                         help='The scan conf')
 
 
@@ -50,6 +51,8 @@ if __name__ == "__main__":
         categories = os.listdir(args.dataset_dir)
     if 'x' in categories:
         categories.remove('x')
+    if 'real' in categories:
+        categories.remove('real')
 
     # scan all training data with random configuration from 0,1,2
     # and test data with 0,1,2
@@ -60,10 +63,10 @@ if __name__ == "__main__":
     # 2 (hard) --cameras 15 --points 12000 --noise 0.005 --outliers 0.33
     # 3 (convonet) --cameras 50 --points 3000 --noise 0.005 --outliers 0.0
 
-    for i,c in enumerate(categories):
+    for idx,c in enumerate(categories):
         if c.startswith('.'):
             continue
-        print("\n############## Processing {}/{} ############\n".format(i+1,len(categories)))
+        print("\n############## Processing {}/{} ############\n".format(idx+1,len(categories)))
 
         ### train
         args.input = os.listdir(os.path.join(args.dataset_dir, c, "3_scan", str(args.conf)))
@@ -73,22 +76,26 @@ if __name__ == "__main__":
             os.makedirs(conf_dir)
 
         for i in args.input:
+            i=i[:-4]
             args.wdir = os.path.join(args.dataset_dir, c)
             args.i = os.path.join("3_scan", str(args.conf),i)
-            name = i.split('_')[1][:-4]
-            args.o = os.path.join(name,i[:-4])
-            args.g = "2_watertight/"+i[:-4]+".off"
+            name = i.split('_')[1]
+            args.o = os.path.join(name,i)
+            args.g = "2_watertight/"+i+".off"
 
-            main(args)
+            try:
+                main(args)
 
-            # move
-            in_dir =  os.path.join(args.dataset_dir,c,"gt",i[:-4]+"*")
-            out_dir = os.path.join(conf_dir,name)
-            if not os.path.exists(out_dir):
-                os.makedirs(out_dir)
-            for f in glob.glob(in_dir):
-                p = subprocess.Popen(["mv",f,out_dir])
-                p.wait()
+                # move
+                in_dir =  os.path.join(args.dataset_dir,c,"gt",i+"*")
+                out_dir = os.path.join(conf_dir,name)
+                if not os.path.exists(out_dir):
+                    os.makedirs(out_dir)
+                for f in glob.glob(in_dir):
+                    p = subprocess.Popen(["mv",f,out_dir])
+                    p.wait()
+            except:
+                print("Problem with shape {}-{}".format(c,i))
 
         # # night_stand to nightstand
         # in_dir =  os.path.join(args.dataset_dir,c,"train")

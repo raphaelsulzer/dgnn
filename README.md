@@ -1,4 +1,10 @@
 # Scalable Surface Reconstruction with Delaunay-Graph Neural Networks [SGP 2021]
+
+![](presentation/teaser/pc03.png)  | ![](presentation/teaser/ours04.png) |  ![](presentation/teaser/occ06.png) 
+:-------------------------:|:-----------------------------------:|:-------------------------:
+MVS point cloud             |                Ours                 |  ConvONet [1]
+
+
 [**Paper**](https://arxiv.org/pdf/2107.06130.pdf) | [**Video**](https://youtu.be/KIrCDGhS10o) <br>
 
 This repository contains the implementation of the paper:
@@ -33,7 +39,6 @@ Please follow the instructions step-by-step.
 1. Clone the repository to your local machine and enter the folder
 ```
 git clone git@github.com:raphaelsulzer/dgnn.git
-cd dgnn
 ```
 
 2. Create an anaconda environment called `dgnn`
@@ -44,8 +49,7 @@ conda activate dgnn
 
 3. Compile the extension module `libmesh` (taken from [Convolutional Occupancy Networks](https://github.com/autonomousvision/convolutional_occupancy_networks) [1])
 ```
-cd utils
-python setup_libmesh_convonet.py build_ext --inplace
+python utils/setup_libmesh_convonet.py build_ext --inplace
 ```
 
 ## Mesh reconstruction using our pretrained model
@@ -57,8 +61,7 @@ Reconstruct the Berger et al. [2] dataset from the scans used in our paper.
 1. Download and unzip the dataset in the `data` folder
 
 ```
-cd data
-bash download_reconbench.sh
+bash data/download_reconbench.sh
 ```
 
 2. Reconstruct and evaluate the meshes
@@ -139,13 +142,12 @@ and extract ground truth labels and features.
 1. Scan ground truth mesh
 
 ```
-cd utils
-./scan -w path/to/working_directory -i "" -o output_filename -g mesh_to_scan_filename --export npz
+utils/scan -w path/to/working_directory -i "" -o output_filename -g mesh_to_scan_filename --export npz
 ```
 
 There are several other options, such as the number of cameras or noise. You can see all available options by running
 ```
-./scan --help
+utils/scan --help
 ```
 Note that this uses our own scanning procedure and not the one from Berger et al. [2] 
 used in our paper.
@@ -153,8 +155,7 @@ used in our paper.
 2. Extract labels and features
 
 ```
-cd utils
-./feat -w path/to/working_directory -i input_filename.npz -o output_filename -g groundtruth_mesh_filename -s npz
+utils/feat -w path/to/working_directory -i input_filename -o output_filename -g groundtruth_mesh_filename -s npz
 ```
 
 See `processing/reconbench/feat.py` and `processing/reconbench/scan.py` for examples on how

@@ -94,9 +94,11 @@ class dataLoader:
         self.category = d["category"]
         self.id = d["id"]
         self.scan_conf = d["scan_conf"]
+        self.gtfilename = d["gtfile"]
 
         # self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
-        self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
+        # self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
+        self.basefilename = os.path.join(self.path, self.gtfilename)
 
 
         # read vertex features and labels
@@ -208,8 +210,11 @@ class dataLoader:
         ################### ground truth ###################
         ####################################################
         temp = np.load(self.basefilename+"_labels.npz")
-        self.gt = torch.Tensor([temp["inside_perc"],temp["outside_perc"]]).type(torch.float)
-        self.gt = torch.transpose(self.gt,1,0)
+        if(self.clf.inference.has_label):
+            self.gt = torch.Tensor([temp["inside_perc"],temp["outside_perc"]]).type(torch.float)
+            self.gt = torch.transpose(self.gt, 1, 0)
+        else:
+            self.gt = torch.zeros(size=temp["infinite"].shape)
         self.infinite = torch.from_numpy(temp["infinite"]).type(torch.bool)
 
         ####################################################

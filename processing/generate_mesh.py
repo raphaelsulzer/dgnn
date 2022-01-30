@@ -75,7 +75,7 @@ def generate(data, prediction, clf):
     labels = F.log_softmax(prediction[data.infinite == 0], dim=-1).argmax(1).numpy()
 
     ### reconstruction
-    mfile = os.path.join(data.path, "gt", data.scan_conf, data.id, data.filename + "_3dt.npz")
+    mfile = os.path.join(data.path, data.gtfilename + "_3dt.npz")
 
     mdata = np.load(mfile)
     assert(len(labels)==len(mdata["tetrahedra"]))
@@ -107,6 +107,7 @@ def generate(data, prediction, clf):
     recon_mesh = trimesh.Trimesh(mdata["vertices"], mdata["facets"][interfaces],process=True)
     if(clf.temp.fix_orientation):
         trimesh.repair.fix_normals(recon_mesh)
+        # trimesh.repair.fix_inversion(recon_mesh)
         # TODO: check to see if this shouldn't be rather trimesh.repair.fix_inversion (maybe it is faster)
 
     eval_dict = dict()
@@ -125,17 +126,17 @@ def generate(data, prediction, clf):
 
     ### IOU ###
     if('iou' in clf.temp.metrics):
-        occ_file = os.path.join(data.path, "eval", subfolder, "points.npz")
+        if(os.path.exists(os.path.join(data.path, "eval", "points.npz"))):
+            occ_file = os.path.join(data.path, "eval", "points.npz")
+        else:
+            occ_file = os.path.join(data.path, "eval", subfolder, "points.npz")
         occ = np.load(occ_file)
         occ_points = occ["points"]
         gt_occ = occ["occupancies"]
-        gt_occ = np.unpackbits(gt_occ)[:occ_points.shape[0]]
-        # gt_occ = gt_occ.astype(np.float32)
-        gt_occ = gt_occ.astype(np.bool)
-
+        gt_occ = np.unpackbits(gt_occ)
         try:
             recon_occ = check_mesh_contains(recon_mesh,occ_points)
-            eval_dict["iou"] = compute_iou(gt_occ, recon_occ)
+            eval_dict["iou"] = compute_iou(recon_occ, gt_occ)
         except:
             print("WARNING: Could not calculate IoU for mesh ",data['filename'])
             eval_dict["iou"] = 0.0

@@ -56,7 +56,8 @@ def scan_one(args):
                "--outliers", str(outliers),
                "--points", str(points),
                "--cameras", str(cameras),
-               "--export", "npz"]
+               "--export", "npz",
+               "--gclosed", "1"]
     # print("run command: ", command)
     p = subprocess.Popen(command)
     p.wait()
@@ -72,37 +73,21 @@ def scan_one(args):
              noise=np.array(noise,dtype=np.float64),
              outliers=np.array(outliers,dtype=np.float64))
 
-def main(args_list,njobs=0):
-
-    if njobs>0:
-        # multiprocessing.set_start_method('spawn', force=True)
-        pool = multiprocessing.Pool(njobs)
-        try:
-            for _ in tqdm(pool.imap_unordered(scan_one, args_list), total=len(args_list)):
-                pass
-            # pool.map_async(process_one, obj_list).get()
-        except KeyboardInterrupt:
-            # Allow ^C to interrupt from any thread.
-            exit()
-        pool.close()
-    else:
-        for obj in tqdm(args_list):
-            scan_one(obj)
-
+    a=5
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='reconbench evaluation')
 
-    parser.add_argument('-d', '--dataset_dir', type=str, default="/mnt/raphael/ShapeNetWatertight/",
+    parser.add_argument('-d', '--dataset_dir', type=str, default="/home/rsulzer/data2/ShapeNetWatertight/",
                         help='working directory which should include the different scene folders.')
-    parser.add_argument('--scan_conf', type=int, default=99,
+    parser.add_argument('--scan_conf', type=int, default=4,
                         help='the scan conf')
     parser.add_argument('--overwrite', type=int, default=1,
                         help='overwrite existing files')
     parser.add_argument('--njobs', type=int, default=0,
                         help='number of workers. > 0 uses multiprocessing.')
-    parser.add_argument('--sure_dir', type=str, default="/home/raphael/cpp/surfaceReconstruction/build/release",
+    parser.add_argument('--sure_dir', type=str, default="/home/rsulzer/cpp/surfaceReconstruction/build/release",
                         help='Indicate the sure build directory, pointing to .../build/release folder starting from user_dir')
 
 
@@ -129,23 +114,26 @@ if __name__ == "__main__":
     # 3 (convonet) --cameras 50 --points 3000 --noise 0.005 --outliers 0.0
 
     for i,c in enumerate(categories):
-        # if c.startswith('.'):
-        #     continue
+        if c.startswith('.'):
+            continue
         print("\n\n############## Processing {} - {}/{} ############\n\n".format(c,i+1,len(categories)))
 
         ### train
         args.cdir = os.path.join(args.dataset_dir, c)
-        args.input = os.listdir(args.cdir)
+        files = os.listdir(os.path.join(args.cdir,"4_watertight_scaled"))
 
-        args_list = []
-        for i in tqdm(args.input,ncols=50):
-            args.wdir = os.path.join(args.cdir,i)
-            args.i = os.path.join('mesh','mesh.off')
-            args.o = os.path.join('scan',str(args.scan_conf))
-            os.makedirs(os.path.join(args.wdir,'scan'),exist_ok=True)
-            args_list.append(args)
-            main(args_list,args.njobs)
-
+        for i in tqdm(files,ncols=50):
+            try:
+                i=i[:-4]
+                os.makedirs(os.path.join(args.cdir,i,"mesh"),exist_ok=True)
+                os.rename(os.path.join(args.cdir,"4_watertight_scaled",i+".off"),os.path.join(args.cdir,i,"mesh","mesh.off"))
+                args.wdir = os.path.join(args.cdir,i)
+                args.i = os.path.join("mesh","mesh.off")
+                args.o = os.path.join('scan',str(args.scan_conf))
+                os.makedirs(os.path.join(args.wdir,'scan'),exist_ok=True)
+                scan_one(args)
+            except:
+                pass
 
 
 

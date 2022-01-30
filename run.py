@@ -178,8 +178,8 @@ def inference(clf):
         row = data['scan_conf'] if data['scan_conf'] else str(0)
 
         prediction = trainer.inference(data, subgraph_sampler, clf)
-        results_dict["loss"].loc[int(row), data["category"]] = clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum
-        # results_dict["count"].loc[int(row), data["category"]] += 1
+        if clf.inference.has_label:
+            results_dict["loss"].loc[int(row), data["category"]] = clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum
         if("prediction" in clf.inference.export):
             loader.exportScore(prediction)
         if("mesh" in clf.inference.export):
@@ -209,7 +209,8 @@ def prepareSample(clf, file):
 
 
     torch_dataset = Data(x=my_loader.features, y=my_loader.gt, infinite=my_loader.infinite, edge_index=my_loader.edge_lists,
-                   edge_attr=my_loader.edge_features, path=my_loader.path, filename= my_loader.filename, category=my_loader.category, id=my_loader.id, scan_conf=my_loader.scan_conf)
+                   edge_attr=my_loader.edge_features, path=my_loader.path, gtfilename=my_loader.gtfilename,
+                    filename= my_loader.filename, category=my_loader.category, id=my_loader.id, scan_conf=my_loader.scan_conf)
 
     if(not clf.model.edge_convs and clf.graph.self_loops):
         torch_dataset.edge_index = add_self_loops(torch_dataset.edge_index)[0]
