@@ -1,6 +1,7 @@
 #!/bin/bash
 echo "Start downloading ..."
-gdown --id 1WPEs-l22UmwCy8ZCiIhKaL03MbQE1dgT
+cd data
+gdown --id 18usEYyY0A1KqbVdbwu7QDA2rH-UNRdsj
 unzip reconbench.zip
 rm reconbench.zip
 echo "Done!"
