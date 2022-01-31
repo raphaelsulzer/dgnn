@@ -1,8 +1,8 @@
 # Scalable Surface Reconstruction with Delaunay-Graph Neural Networks [SGP 2021]
 
-![](presentation/teaser/pc03.png)|![](presentation/teaser/occ06.png)|![](presentation/teaser/ours04.png)  
-:--------------------------------:|:--------------------------------:|:----------------------------------:
-MVS point cloud |               Ours               |              ConvONet              
+![](presentation/teaser/pc03.png)|![](presentation/teaser/occ06.png)|![](presentation/teaser/ours04.png)|
+:--------------------------------:|:--------------------------------:|:----------------------------------:|
+MVS point cloud |               Ours               |              ConvONet              |
 
 
 
