@@ -1,7 +1,7 @@
 # Scalable Surface Reconstruction with Delaunay-Graph Neural Networks [SGP 2021]
 <table>
 <thead>
-  <tr>
+  <tr align="center">
     <th><img style="width:300px;" src="presentation/teaser/pc03.png"></th>
     <th><img style="width:300px;" src="presentation/teaser/ours04.png"></th>
     <th><img style="width:290px;" src="presentation/teaser/occ06.png"></th>
