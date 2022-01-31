@@ -2,9 +2,9 @@
 <table>
 <thead>
   <tr>
-    <th><img style="width:200px;" src="presentation/teaser/pc03.png"></th>
-    <th><img style="width:200px;" src="presentation/teaser/ours04.png"></th>
-    <th><img style="width:200px;" src="presentation/teaser/occ06.png"></th>
+    <th><img style="width:300px;" src="presentation/teaser/pc03.png"></th>
+    <th><img style="width:300px;" src="presentation/teaser/ours04.png"></th>
+    <th><img style="width:300px;" src="presentation/teaser/occ06.png"></th>
   </tr>
 </thead>
 <tbody align="center">
