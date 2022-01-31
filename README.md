@@ -1,27 +1,20 @@
 # Scalable Surface Reconstruction with Delaunay-Graph Neural Networks [SGP 2021]
-
-
-
-<div class="row">
-  <div class="column">
-    <img src="presentation/teaser/pc03.png" alt="Snow" style="width:10%">
-  </div>
-  <div class="column">
-    <img src="presentation/teaser/ours04.png" alt="Forest" style="width:10%">
-  </div>
-  <div class="column">
-    <img src="presentation/teaser/occ06.png" alt="Mountains" style="width:10%">
-  </div>
-</div>
-
-
-[//]: # (![]&#40;presentation/teaser/pc03.png&#41;|![]&#40;presentation/teaser/occ06.png&#41;|![]&#40;presentation/teaser/ours04.png&#41;|)
-
-[//]: # (:--------------------------------:|:--------------------------------:|:----------------------------------:|)
-
-[//]: # (MVS point cloud |               Ours               |              ConvONet              |)
-
-
+<table>
+<thead>
+  <tr>
+    <th><img style="width:200px;" src="presentation/teaser/pc03.png"></th>
+    <th><img style="width:200px;" src="presentation/teaser/ours04.png"></th>
+    <th><img style="width:200px;" src="presentation/teaser/occ06.png"></th>
+  </tr>
+</thead>
+<tbody align="center">
+  <tr>
+    <td>MVS point cloud</td>
+    <td>Ours</td>
+    <td>ConvONet [1]</td>
+  </tr>
+</tbody>
+</table>
 
 [**Paper**](https://arxiv.org/pdf/2107.06130.pdf) | [**Video**](https://youtu.be/KIrCDGhS10o) <br>
 
