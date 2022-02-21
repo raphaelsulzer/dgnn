@@ -48,18 +48,18 @@ If you find our code or paper useful, please consider citing
 Please follow the instructions step-by-step.
 
 1. Clone the repository to your local machine and enter the folder
-```
+```bash
 git clone git@github.com:raphaelsulzer/dgnn.git
 ```
 
 2. Create an anaconda environment called `dgnn`
-```
+```bash
 conda env create -f environment.yaml
 conda activate dgnn
 ```
 
 3. Compile the extension module `libmesh` (taken from [Convolutional Occupancy Networks](https://github.com/autonomousvision/convolutional_occupancy_networks) [1])
-```
+```bash
 python utils/setup_libmesh_convonet.py build_ext --inplace
 ```
 
@@ -71,13 +71,13 @@ Reconstruct the Berger et al. [2] dataset from the scans used in our paper.
 
 1. Download and unzip the dataset in the `data` folder
 
-```
+```bash
 bash data/download_reconbench.sh
 ```
 
 2. Reconstruct and evaluate the meshes
 
-```
+```bash
 python run.py -i --config configs/pretrained/reconbench.yaml
 ```
 
@@ -105,6 +105,21 @@ python run.py -i --config configs/pretrained/reconbench.yaml
 
 [comment]: <> (To evaluate the results you can e.g. sample points on the meshes and use the [multi-view-evaluation]&#40;https://github.com/ETH3D/multi-view-evaluation&#41; tool provided by the ETH3D dataset authors.)
 
+### ModelNet10
+
+Reconstruct and evaluate ModelNet10 from 
+[Deep Surface Reconstruction from Point Clouds with Visibility Information](https://github.com/raphaelsulzer/dsrv-data)
+
+1. Download and unzip the dataset in the `data` folder
+```bash
+bash data/download_modelnet.sh
+```
+
+2. Reconstruct and evaluate the meshes
+```bash
+python run.py -i --config configs/pretrained/modelnet.yaml
+```
+
 ### Custom object or scene
 
 To reconstruct any object or scene from a point cloud you need a `pointcloud.npz` file.
@@ -113,7 +128,7 @@ Additionally you need to adjust the `configs/custom.yaml` file to point to your 
 
 Once you have everything set up run
 
-```
+```bash
 python run.py -i --config configs/custom.yaml
 ```
 
@@ -129,7 +144,7 @@ The `.yaml` file also allows to change several model parameters.
 
 To train a new model run
 
-```
+```bash
 python run.py -t --config configs/custom.yaml
 ```
 
@@ -148,30 +163,26 @@ Furthermore you need several files containing the 3D Delaunay triangulation and 
 or scene.
 
 We provide prebuild binaries for Ubuntu 18.04 to synthetically scan a mesh, build a 3D Delaunay triangulation,
-and extract ground truth labels and features.
+and extract ground truth labels and features. Note that this uses the scanning procedure introduced in [DSRV](https://github.com/raphaelsulzer/dsrv-data) and not the one from Berger et al. [2] 
+used in our paper.
 
 1. Scan ground truth mesh
 
+```bash
+utils/scan -w path/to/workingDir -i filenameMeshToScan --export npz
 ```
-utils/scan -w path/to/working_directory -i "" -o output_filename -g mesh_to_scan_filename --export npz
-```
-
-There are several other options, such as the number of cameras or noise. You can see all available options by running
-```
-utils/scan --help
-```
-Note that this uses our own scanning procedure and not the one from Berger et al. [2] 
-used in our paper.
 
 2. Extract labels and features
 
-```
-utils/feat -w path/to/working_directory -i input_filename -o output_filename -g groundtruth_mesh_filename -s npz
+```bash
+utils/feat -w path/to/workingDir -i filenameScan -o filenameOutput -g filenameGroundTruthMesh -s npz
 ```
 
 See `processing/reconbench/feat.py` and `processing/reconbench/scan.py` for examples on how
 to batch process all files in your dataset.
 
+If you want further information about the tools used for scanning and feature extraction 
+or you want to compile them youself have a look at the [mesh-tools repository](https://github.com/raphaelsulzer/mesh-tools).
 
 ## References
 
