@@ -192,9 +192,11 @@ class Trainer():
                 print("{} is not a valid loss. choose either kl or mse".format(clf.training.loss))
                 sys.exit(1)
 
+            if(clf.regularization.cell_reg_type == "vol"):
             # multiply loss per cell with volume of the cell
-            # shape_weight = data.batch_x[:, 0].to(clf.temp.device)
-            shape_weight = torch.sqrt(data.batch_x[:, 0].to(clf.temp.device))
+                shape_weight = data.batch_x[:, 0].to(clf.temp.device)
+            elif(clf.regularization.cell_reg_type == "sqrt_vol"):
+                shape_weight = torch.sqrt(data.batch_x[:, 0].to(clf.temp.device))
             # shape_weight =  torch.log(1+batch_x[:,0].to(clf.temp.device))
 
             cell_loss = cell_loss * shape_weight

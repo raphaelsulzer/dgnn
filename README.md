@@ -63,7 +63,7 @@ conda activate dgnn
 python utils/setup_libmesh_convonet.py build_ext --inplace
 ```
 
-## Mesh reconstruction using our pretrained model
+## Surface mesh reconstruction using our pretrained models
 
 ### Berger et al. dataset
 
@@ -143,7 +143,6 @@ prepare a `custom.yaml` file (see `configs/reconbench.yaml` for an example).
 The `.yaml` file also allows to change several model parameters.
 
 To train a new model run
-
 ```bash
 python run.py -t --config configs/custom.yaml
 ```
@@ -164,16 +163,14 @@ or scene.
 
 We provide prebuild binaries for Ubuntu 18.04 to synthetically scan a mesh, build a 3D Delaunay triangulation,
 and extract ground truth labels and features. Note that this uses the scanning procedure introduced in [DSRV](https://github.com/raphaelsulzer/dsrv-data) and not the one from Berger et al. [2] 
-used in our paper.
+used in our paper. 
 
-1. Scan ground truth mesh
-
+Scan ground truth mesh
 ```bash
 utils/scan -w path/to/workingDir -i filenameMeshToScan --export npz
 ```
 
-2. Extract labels and features
-
+Extract labels and features
 ```bash
 utils/feat -w path/to/workingDir -i filenameScan -o filenameOutput -g filenameGroundTruthMesh -s npz
 ```

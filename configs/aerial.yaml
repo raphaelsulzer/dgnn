@@ -1,28 +1,8 @@
 features:
-  scaling:
-    - s
-  normalization_range:
-    - 0
-    - 1
-  node_features:
-    - shape
-    - vertex
-    - facet
-    - count
-    - min
-    - max
-    - sum
-    - first
-    - second  # important feature, only with "first" results are much worse
-#    - last # useless feature for object level training, because there are no camera containing tetrahedra
-  edge_features:
-    - shape
-    - vertex
-    - facet
-    - count
-    - min
-    - max
-    - sum
+  scaling: s
+  normalization_range: [0,1]
+  node_features: [shape,vertex,facet,count,min,max,sum,first,second]  # important feature, only with "first" results are much worse
+  edge_features: [shape,vertex,facet,count,min,max,sum]
   node_normalization_feature: null
   edge_normalization_feature: null
 graph:
