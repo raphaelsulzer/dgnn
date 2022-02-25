@@ -1,9 +1,16 @@
-scan="/home/rsulzer/"
-labatut="/home/adminlocal/PhD/cpp/mesh-tools/build/release/labatut"
+feat="/home/rsulzer/cpp/mesh-tools/build/release/feat"
+#labatut="/home/adminlocal/PhD/cpp/mesh-tools/build/release/labatut"
 
-wdir="/home/adminlocal/PhD/data/synthetic_room"
+wdir="/home/rsulzer/data2/yanis_terrestrial/atelier/OC/"
+$feat -w $wdir -i "Atl_5_ssEch_04.ply" -e ""
 
-$scan -w $wdir -i "00000866.off" --export all --gclosed 0 --cameras 50 --points 50000 --noise 0.0025 --outliers 0.01
 
-$labatut -w $wdir -i "00000866" -s npz --gco angle-5.0
+#wdir="/home/rsulzer/data2/yanis_terrestrial/exterieur/OC/"
+#$feat -w $wdir -i "Ext_5_ssEch_04.ply" --export ""
+#
+#
+#
+#wdir="/home/rsulzer/data2/yanis_terrestrial/garage/OC/"
+#$feat -w $wdir -i "Gar_5_ssEch_04.ply" --export ""
+
 
