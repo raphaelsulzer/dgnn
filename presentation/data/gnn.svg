@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with matplotlib (https://matplotlib.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   height="288pt"
+   version="1.1"
+   viewBox="0 0 288 288"
+   width="288pt"
+   id="svg20"
+   sodipodi:docname="gnn.svg"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)">
+  <metadata
+     id="metadata24">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1366"
+     inkscape:window-height="660"
+     id="namedview22"
+     showgrid="false"
+     inkscape:zoom="1.2291667"
+     inkscape:cx="155.49493"
+     inkscape:cy="178.22428"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg20" />
+  <defs
+     id="defs4">
+    <style
+       type="text/css"
+       id="style2">
+*{stroke-linecap:butt;stroke-linejoin:round;}
+  </style>
+  </defs>
+  <g
+     style="stroke-linecap:butt;stroke-linejoin:round"
+     id="patch_1">
+    <path
+       inkscape:connector-curvature="0"
+       id="path6"
+       style="fill:#ffffff;stroke-linecap:butt;stroke-linejoin:round"
+       d="M 0,288 H 288 V 0 H 0 Z" />
+  </g>
+  <g
+     style="stroke-linecap:butt;stroke-linejoin:round"
+     id="axes_1">
+    <g
+       style="stroke-linecap:butt;stroke-linejoin:round"
+       id="line2d_1">
+      <g
+         id="g841">
+        <path
+           sodipodi:nodetypes="cccccccccccccccccccccccccccccccccccccccccc"
+           clip-path="url(#p67959b770c)"
+           d="m 91.8,113.76 -41.85,31.68 m 55.8,31.68 -55.8,-31.68 m 55.8,31.68 -27.9,31.68 m 27.9,-31.68 -13.95,-63.36 m 27.9,95.04 H 77.85 m 41.85,0 -13.95,-31.68 M 175.5,113.76 H 91.8 m 83.7,0 -69.75,63.36 m 83.7,0 h -83.7 m 83.7,0 -69.75,31.68 M 189.45,177.12 175.5,113.76 M 189.45,50.4 91.8,113.76 M 189.45,50.4 175.5,113.76 m 27.9,126.72 -83.7,-31.68 m 83.7,31.68 -13.95,-63.36 m 13.95,-95.04 -27.9,31.68 m 69.75,95.04 -55.8,-31.68 m 55.8,0 -69.75,-63.36 m 69.75,63.36 h -55.8 m 55.8,0 -41.85,-95.04 m 41.85,95.04 v 31.68"
+           style="fill:none;stroke:#bfbfbf;stroke-width:1.5;stroke-linecap:square;stroke-linejoin:round"
+           id="path9"
+           inkscape:connector-curvature="0"
+           inkscape:export-xdpi="1000"
+           inkscape:export-ydpi="1000" />
+      </g>
+    </g>
+    <g
+       style="stroke-linecap:butt;stroke-linejoin:round"
+       id="line2d_2" />
+  </g>
+  <defs
+     id="defs18">
+    <clipPath
+       id="p67959b770c">
+      <rect
+         height="221.76"
+         width="223.2"
+         x="36"
+         y="34.56"
+         id="rect15" />
+    </clipPath>
+  </defs>
+</svg>

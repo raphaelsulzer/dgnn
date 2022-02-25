@@ -1,0 +1,6 @@
+<!DOCTYPE ViewState>
+<project>
+ <VCGCamera TranslationVector="-2.10205 2.73149 -1.15942 1" LensDistortion="0 0" ViewportPx="633 557" PixelSizeMm="0.0369161 0.0369161" CenterPx="316 278" FocalMm="17.8074" RotationMatrix="0.7594 0.647912 -0.0593406 0 -0.243701 0.367825 0.897393 0 0.603259 -0.667019 0.437223 0 0 0 0 1 "/>
+ <ViewSettings NearPlane="1.03109" TrackScale="1.83487" FarPlane="13.0311"/>
+ <Render Lighting="1" DoubleSideLighting="0" SelectedVert="0" ColorMode="1" SelectedFace="0" BackFaceCull="0" FancyLighting="0" DrawMode="5" TextureMode="0"/>
+</project>
