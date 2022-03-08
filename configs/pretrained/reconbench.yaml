@@ -59,21 +59,17 @@ model:
   concatenate: 0 # whether to concatenate (or add) target to source node embedding
   edge_prediction: 0
   normalization: b
-time:
-  start: ""
-  end: ""
 paths:
-  data: data
+  data: data/reconbench
   out: data/models/kf96   # also where the model is stored
 regularization:
-  cell_reg_type: vol
-  reg_weight: 0.4
-  reg_type: null
-  reg_epoch: null
-  shape_weight_batch_normalization: 1
-  inside_outside_weight: [1.0, 1.0]
+  cell_type: vol
+  cell_norm: null # [null, sqrt, log]
+  edge_type: null # edge regularization
+  edge_epoch: null # edge regularization
+  edge_weight: 0.4 # edge regularization
 graph_cut:
-  unary_weight: 100
+  unary_weight: 10
   unary_type: logits
-  binary_weight: 100
+  binary_weight: 10
   binary_type: beta

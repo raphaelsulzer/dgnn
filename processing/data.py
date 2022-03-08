@@ -9,18 +9,11 @@ import torch
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
 class dataLoader:
-    ### this class imports all the data (feature+label) from the X_labels.txt files
-    ### and all the graph structure from X_edge_features and X_adjacency_ij and X_adjacency_ji
+    """
+    this class imports all the data (graph+feature+label) from the files located in dataset/object/gt/
+    """
 
     def __init__(self, clf, verbosity=1):
-        # self.input_path = os.path.join(clf.paths.data,"gt")
-        # if not os.path.exists(self.input_path):
-        #     print("ground truth path {} does not exist.".format(self.input_path))
-        #     sys.exit(1)
-        # self.output_path = os.path.join(clf.paths.data,"prediction")
-        # if not os.path.exists(self.output_path):
-        #     os.mkdir(self.output_path)
-
         self.n_nodes = 0
         self.id = ''
         self.gt = []
@@ -45,11 +38,11 @@ class dataLoader:
 
     def getInfo(self):
 
-        fs = self.features.size()[1] - bool(self.clf.regularization.cell_reg_type)
+        fs = self.features.size()[1] - bool(self.clf.regularization.cell_type)
         self.clf.temp.num_node_features = fs
 
         if(self.read_edge_features):
-            fse = self.edge_features.size()[1] - bool(self.clf.regularization.reg_type)
+            fse = self.edge_features.size()[1] - bool(self.clf.regularization.edge_type)
             self.clf.temp.num_edge_features = fse
         else:
             self.clf.temp.num_edge_features = None
@@ -83,8 +76,6 @@ class dataLoader:
             else:
                 print("\t-Warning: Features are neither standardized nor normalized")
 
-
-
         return self.n_nodes
 
     def run(self, d):
@@ -94,11 +85,10 @@ class dataLoader:
         self.category = d["category"]
         self.id = d["id"]
         self.scan_conf = d["scan_conf"]
-        self.gtfilename = d["gtfile"]
+        self.gtfile = d["gtfile"]
+        self.ioufile = d["ioufile"]
 
-        # self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
-        # self.basefilename = os.path.join(self.path, "gt", self.scan_conf, self.id, self.filename)
-        self.basefilename = os.path.join(self.path, self.gtfilename)
+        self.basefilename = os.path.join(self.path, self.gtfile)
 
 
         # read vertex features and labels
@@ -189,8 +179,8 @@ class dataLoader:
                     self.features.drop(labels=['cb_facet_last_first_dist_sum','cb_facet_last_second_dist_sum'], axis='columns', inplace=True)
 
         # put a copy of the loss normalization feature at the beginning of the feature dataframe
-        if(self.clf.regularization.cell_reg_type):
-            self.features.insert(0, "reg_"+self.clf.regularization.cell_reg_type, self.features[self.clf.regularization.cell_reg_type],allow_duplicates=False)
+        if(self.clf.regularization.cell_type):
+            self.features.insert(0, "reg_"+self.clf.regularization.cell_type, self.features[self.clf.regularization.cell_type],allow_duplicates=False)
 
         self.node_feature_names = list(self.features.columns.values)
 
@@ -281,8 +271,8 @@ class dataLoader:
                     self.features.drop(labels=['cb_facet_last_first_dist_sum','cb_facet_last_second_dist_sum'], axis='columns', inplace=True)
 
         # put a copy of the loss normalization feature at the beginning of the feature dataframe
-        if(self.clf.regularization.cell_reg_type):
-            self.features.insert(0, "reg_"+self.clf.regularization.cell_reg_type, self.features[self.clf.regularization.cell_reg_type],allow_duplicates=False)
+        if(self.clf.regularization.cell_type):
+            self.features.insert(0, "reg_"+self.clf.regularization.cell_type, self.features[self.clf.regularization.cell_type],allow_duplicates=False)
 
         self.node_feature_names = list(self.features.columns.values)
 
@@ -415,8 +405,8 @@ class dataLoader:
                     self.edge_features.drop(labels=['fb_facet_last_dist_sum'], axis='columns', inplace=True)
 
         # put a copy of the normalization feature at the beginning of the feature dataframe
-        if(self.clf.regularization.reg_type):
-            self.edge_features.insert(0, "reg_"+self.clf.regularization.reg_type, self.edge_features[self.clf.regularization.reg_type],allow_duplicates=False)
+        if(self.clf.regularization.edge_type):
+            self.edge_features.insert(0, "reg_"+self.clf.regularization.edge_type, self.edge_features[self.clf.regularization.edge_type],allow_duplicates=False)
 
         self.edge_feature_names = list(self.edge_features.columns.values)
 
@@ -469,10 +459,10 @@ class dataLoader:
                 sys.exit(1)
 
         if(self.clf.features.node_normalization_feature is not None):
-            if(self.clf.regularization.cell_reg_type is not None):
-                self.features.iloc[:, 1:] = (self.features.iloc[:, 1:]).div(self.features[self.clf.regularization.cell_reg_type]+0.0001, axis=0)
+            if(self.clf.regularization.cell_type is not None):
+                self.features.iloc[:, 1:] = (self.features.iloc[:, 1:]).div(self.features[self.clf.regularization.cell_type]+0.0001, axis=0)
             else:
-                self.features = self.features.div(self.features[self.clf.regularization.cell_reg_type] + 0.0001, axis=0)
+                self.features = self.features.div(self.features[self.clf.regularization.cell_type] + 0.0001, axis=0)
 
         if('edge' in self.clf.features.scaling):
             self.features = self.features.div(self.mean_edge, axis=0)
@@ -492,7 +482,7 @@ class dataLoader:
             else:
                 return
 
-        if(self.clf.regularization.cell_reg_type is not None):
+        if(self.clf.regularization.cell_type is not None):
             # starting at col 1 because col 0 is the regularization feature
             scaler.fit(self.features.iloc[:, 1:])
             self.features.iloc[:, 1:] = scaler.transform(self.features.iloc[:, 1:])
@@ -503,12 +493,12 @@ class dataLoader:
         if(self.read_edge_features):
 
             if (self.clf.features.edge_normalization_feature is not None):
-                if (self.clf.regularization.reg_type is not None):
-                    self.edge_features.iloc[:, 1:] = (self.edge_features.iloc[:, 1:]).div(self.edge_features[self.clf.regularization.reg_type] + 0.0001, axis=0)
+                if (self.clf.regularization.edge_type is not None):
+                    self.edge_features.iloc[:, 1:] = (self.edge_features.iloc[:, 1:]).div(self.edge_features[self.clf.regularization.edge_type] + 0.0001, axis=0)
                 else:
-                    self.edge_features = self.edge_features.div(self.edge_features[self.clf.regularization.reg_type] + 0.0001, axis=0)
+                    self.edge_features = self.edge_features.div(self.edge_features[self.clf.regularization.edge_type] + 0.0001, axis=0)
 
-            if (self.clf.regularization.reg_type is not None):
+            if (self.clf.regularization.edge_type is not None):
                 scaler.fit(self.edge_features.iloc[:, 1:])
                 self.edge_features.iloc[:, 1:] = scaler.transform(self.edge_features.iloc[:, 1:])
             else:

@@ -67,12 +67,11 @@ paths:
   data: /mnt/raphael/
   out: /mnt/raphael/aerial/out/sqrt_vol/
 regularization:
-  cell_reg_type: vol
-  reg_weight: 0.4
-  reg_type: null
-  reg_epoch: null
-  shape_weight_batch_normalization: 1
-  inside_outside_weight: [1.0, 1.0]
+  cell_type: vol
+  cell_norm: sqrt # [null, sqrt, log]
+  edge_type: null # edge regularization
+  edge_epoch: null # edge regularization
+  edge_weight: 0.4 # edge regularization
 graph_cut:
   unary_weight: 10
   unary_type: logits

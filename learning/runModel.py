@@ -148,7 +148,7 @@ class Trainer():
 
         # reg_loss = surface_triangle_prob_kl * weight * clf.regularization.reg_weight
 
-        reg_loss = surface_triangle_probability_kl * clf.regularization.reg_weight
+        reg_loss = surface_triangle_probability_kl * clf.regularization.edge_weight
         # reg_loss = reg_loss.sum() / weight.sum()
         # reg_loss = reg_loss.sum()
 
@@ -166,9 +166,7 @@ class Trainer():
         ###############################################################
         ########################## cell loss ##########################
         ###############################################################
-        if (clf.regularization.cell_reg_type):
-
-
+        if (clf.regularization.cell_type):
 
             if (clf.training.loss == "kl"):
                 # input is always expected in log-probabilities (hence log_softmax) while target is expected in probabilities
@@ -192,12 +190,16 @@ class Trainer():
                 print("{} is not a valid loss. choose either kl or mse".format(clf.training.loss))
                 sys.exit(1)
 
-            if(clf.regularization.cell_reg_type == "vol"):
-            # multiply loss per cell with volume of the cell
-                shape_weight = data.batch_x[:, 0].to(clf.temp.device)
-            elif(clf.regularization.cell_reg_type == "sqrt_vol"):
+            if(clf.regularization.cell_norm == "log"):
+                shape_weight =  torch.log(1+data.batch_x[:, 0].to(clf.temp.device))
+            elif(clf.regularization.cell_norm == "sqrt"):
                 shape_weight = torch.sqrt(data.batch_x[:, 0].to(clf.temp.device))
-            # shape_weight =  torch.log(1+batch_x[:,0].to(clf.temp.device))
+            else:
+                if(clf.regularization.cell_type):
+                    shape_weight = data.batch_x[:, 0].to(clf.temp.device)
+                else:
+                    shape_weight = torch.ones(size=cell_loss.shape)
+
 
             cell_loss = cell_loss * shape_weight
 
@@ -225,7 +227,7 @@ class Trainer():
         loss = cell_loss
 
         if ((loss != loss).any()):
-            print("nan in loss")
+            print("NaN in loss")
 
 
 
@@ -233,24 +235,23 @@ class Trainer():
         ########################## edge loss ##########################
         ###############################################################
         # only works if additional_hops > 0
-        edge_loss=0
         if(logits_edge is not None):
             gt_left = data.y[data.batch_adjs[self.model.num_layers].edge_index[0]][:,1]
             gt_right = data.y[data.batch_adjs[self.model.num_layers].edge_index[1]][:,1]
             edge_loss=F.kl_div(F.log_softmax(logits_edge).squeeze(),(gt_left-gt_right).to(clf.temp.device))
             if((edge_loss != edge_loss).any()):
-                print("here")
+                print("NaN")
             # TODO: get inner ground truth and inner edges and calc an edge_loss
             loss+=edge_loss
 
         ###############################################################################################################
         ############################ area+angle+cc loss / total variation / regularization ############################
         ###############################################################################################################
-        if(clf.regularization.reg_epoch is not None): # check if reg_epoch is not null
+        if(clf.regularization.edge_epoch is not None): # check if reg_epoch is not null
             if(clf.graph.additional_num_hops != 1):
                 print("ERROR: clf.graph.additional_num_hops has to be >= 1 to use regularization")
                 sys.exit(1)
-            if(clf.temp.current_epoch >= clf.regularization.reg_epoch):
+            if(clf.temp.current_epoch >= clf.regularization.edge_epoch):
                 reg_loss = self.calcRegularization(logits_cell,data,clf, metrics)
                 loss+=reg_loss
 

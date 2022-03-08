@@ -59,22 +59,18 @@ model:
   concatenate: 0 # whether to concatenate (or add) target to source node embedding
   edge_prediction: 0
   normalization: b
-time:
-  start: ""
-  end: ""
 paths:
-  data: data
+  data: data/ModelNet10
   out: data/models/modelnet
   train_split: train
   val_split: test
   test_split: test
 regularization:
-  cell_reg_type: vol
-  reg_weight: 0.4
-  reg_type: null
-  reg_epoch: null
-  shape_weight_batch_normalization: 1
-  inside_outside_weight: [1.0 1.0]
+  cell_type: vol
+  cell_norm: null # [null, sqrt, log]
+  edge_type: null # edge regularization
+  edge_epoch: null # edge regularization
+  edge_weight: 0.4 # edge regularization
 graph_cut:
   unary_weight: 10
   unary_type: logits

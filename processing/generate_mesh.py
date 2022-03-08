@@ -75,7 +75,7 @@ def generate(data, prediction, clf):
     labels = F.log_softmax(prediction[data.infinite == 0], dim=-1).argmax(1).numpy()
 
     ### reconstruction
-    mfile = os.path.join(data.path, data.gtfilename + "_3dt.npz")
+    mfile = os.path.join(data.path, data.gtfile + "_3dt.npz")
 
     mdata = np.load(mfile)
     assert(len(labels)==len(mdata["tetrahedra"]))
@@ -126,10 +126,13 @@ def generate(data, prediction, clf):
 
     ### IOU ###
     if('iou' in clf.temp.metrics):
-        if(os.path.exists(os.path.join(data.path, "eval", "points.npz"))):
-            occ_file = os.path.join(data.path, "eval", "points.npz")
+        if("ioufile" in data):
+            occ_file = os.path.join(data.path,data["ioufile"])
         else:
-            occ_file = os.path.join(data.path, "eval", subfolder, "points.npz")
+            if(os.path.exists(os.path.join(data.path, "eval", "points.npz"))):
+                occ_file = os.path.join(data.path, "eval", "points.npz")
+            else:
+                occ_file = os.path.join(data.path, "eval", subfolder, "points.npz")
         occ = np.load(occ_file)
         occ_points = occ["points"]
         gt_occ = occ["occupancies"]
