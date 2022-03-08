@@ -35,14 +35,14 @@ def training(clf):
     my_loader = io.dataLoader(clf)
 
     print("Load {} graph(s) for training:".format(len(clf.training.files)))
-    for graph in tqdm(clf.training.files, ncols=50):
+    for mesh in tqdm(clf.training.files, ncols=50):
         # print("\t-",graph.split("/")[-1])
         try:
-            my_loader.run(graph)
+            my_loader.run(mesh)
             all_graphs.append(Data(x=my_loader.features, y=my_loader.gt, infinite=my_loader.infinite,
                      edge_index=my_loader.edge_lists, edge_attr=my_loader.edge_features, pos=None))
         except:
-            print("WARNING: Couldn't load object ",graph)
+            print("WARNING: Couldn't load object ",mesh)
 
 
     print("\nLoaded graphs:")
@@ -113,8 +113,8 @@ def training(clf):
         model.load_state_dict(load(model_file))
 
     ### start training
-    if(clf.regularization.reg_epoch):
-        print("\nApply regularization starting from epoch {}, with weight {}".format(clf.regularization.reg_epoch,clf.regularization.reg_weight))
+    if(clf.regularization.edge_epoch):
+        print("\nApply edge regularization starting from epoch {}, with weight {}".format(clf.regularization.reg_epoch,clf.regularization.reg_weight))
     print("\nTrain for {} epochs with {} on gpu {}:\n".format(clf.training.epochs, clf.training.loss, clf.temp.args.gpu))
     trainer = rm.Trainer(model)
     trainer.train_test(data, clf)
@@ -209,7 +209,7 @@ def prepareSample(clf, file):
 
 
     torch_dataset = Data(x=my_loader.features, y=my_loader.gt, infinite=my_loader.infinite, edge_index=my_loader.edge_lists,
-                   edge_attr=my_loader.edge_features, path=my_loader.path, gtfilename=my_loader.gtfilename,
+                   edge_attr=my_loader.edge_features, path=my_loader.path, gtfile=my_loader.gtfile, ioufile=my_loader.ioufile,
                     filename= my_loader.filename, category=my_loader.category, id=my_loader.id, scan_conf=my_loader.scan_conf)
 
     if(not clf.model.edge_convs and clf.graph.self_loops):

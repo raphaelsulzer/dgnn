@@ -2,8 +2,6 @@ features:
   scaling: [s]
   normalization_range: [0,1]
   node_features: [shape, vertex, facet, count, min, max, sum, first, second]
-#    - second  # important feature, only with "first" results are much worse
-#    - last # useless feature for object level training, because there are no camera containing tetrahedra
   edge_features: [shape, vertex, facet, count, min, max, sum]
   node_normalization_feature: null
   edge_normalization_feature: null
@@ -13,9 +11,9 @@ graph:
   clique_sizes: [-1] # -1 meaning sample all existing nodes
   self_loops: 0
 inference:
-  dataset: reconbench
+  dataset: synthetic_room_dataset
   classes: null
-  scan_confs: [99]
+  scan_confs: [990]
   shapes_per_conf_per_class: 10
   files: null
   batch_size: 0
@@ -24,24 +22,24 @@ inference:
   model: 20
   graph_cut: false
   fix_orientation: false
-  metrics: [ "iou","chamfer" ]
+  metrics: [ "iou" ]
   export: [ "mesh" ]
 validation:
-  dataset: reconbench
+  dataset: synthetic_room_dataset
   classes: null
-  scan_confs: [99]
-  shapes_per_conf_per_class: 10
+  scan_confs: [990]
+  shapes_per_conf_per_class: 5
   batch_size: 0
   per_layer: 1
   graph_cut: true
   fix_orientation: true
-  metrics: [ "iou","chamfer" ]
+  metrics: [ "iou" ]
 training:
   dataset: synthetic_room_dataset
   classes: null
-  scan_confs: [99]
+  scan_confs: [990]
   data_percentage: 0.6
-  shapes_per_conf_per_class: 1000
+  shapes_per_conf_per_class: 5
   batch_size: 128
   epochs: 100
   loss: kl
@@ -49,7 +47,7 @@ training:
   adjust_lr_every: 24
   load_epoch: 0
   print_every: 1000
-  val_every: 10000
+  val_every: 1000
   export_every: 20000
 model:
   type: sage
@@ -61,12 +59,16 @@ model:
   edge_prediction: 0
   normalization: b
 paths:
-  data: /home/rsulzer/data
-  out: /home/rsulzer/synthetic_room_out/dgnn/debug
+  data: /home/rsulzer/data/synthetic_room_dataset
+  out: /home/rsulzer/data/synthetic_room_out/dgnn/debug
 regularization:
-  cell_reg_type: vol
-  reg_weight: 0.4
-  reg_type: null
-  reg_epoch: null
-  shape_weight_batch_normalization: 1
-  inside_outside_weight: [1.0, 1.0]
+  cell_type: vol
+  cell_norm: sqrt # [null, sqrt, log]
+  edge_type: null # edge regularization
+  edge_epoch: null # edge regularization
+  edge_weight: 0.4 # edge regularization
+graph_cut:
+  unary_weight: 10
+  unary_type: logits
+  binary_weight: 10
+  binary_type: beta

@@ -1,8 +1,8 @@
 features:
-  scaling: s
+  scaling: [s]
   normalization_range: [0,1]
-  node_features: [shape,vertex,facet,count,min,max,sum,first,second]  # important feature, only with "first" results are much worse
-  edge_features: [shape,vertex,facet,count,min,max,sum]
+  node_features: [shape, vertex, facet, count, min, max, sum, first, second, last]
+  edge_features: [shape, vertex, facet, count, min, max, sum]
   node_normalization_feature: null
   edge_normalization_feature: null
 graph:
@@ -11,63 +11,56 @@ graph:
   clique_sizes: [-1] # -1 meaning sample all existing nodes
   self_loops: 0
 inference:
-  dataset: ETH3D
-  classes: ["courtyard"]
-  shapes_per_conf_per_class: 1
-  files: null
-  scan_confs: 0
-  batch_size: 1024
-  per_layer: 0
-  has_label: 0
-  model: best
-  graph_cut: 0
-  fix_orientation: 0
-  export: ["prediction"]
-  metrics: [ "loss","chamfer" ]
-validation:
-  dataset: aerial
+  dataset: synthetic_room_dataset
   classes: null
+  scan_confs: [9]
   shapes_per_conf_per_class: 10
-  scan_confs: 0
-  batch_size: 1024
+  files: null
+  batch_size: 0
+  per_layer: 1
+  has_label: 1
+  model: 20
+  graph_cut: false
+  fix_orientation: false
+  metrics: [ "iou" ]
+  export: [ "mesh" ]
+validation:
+  dataset: synthetic_room_dataset
+  classes: null
+  scan_confs: [9]
+  shapes_per_conf_per_class: 10
+  batch_size: 0
   per_layer: 1
   graph_cut: true
   fix_orientation: true
-  metrics: [ "loss" ]
+  metrics: [ "iou" ]
 training:
-  dataset: aerial
+  dataset: synthetic_room_dataset
   classes: null
-  data_percentage: 0.95
-  shapes_per_conf_per_class: 3
-  scan_confs: 1
-  files: null
-  batch_size: 1024
+  scan_confs: [9]
+  data_percentage: 0.9
+  shapes_per_conf_per_class: 400
+  batch_size: 128
   epochs: 100
   loss: kl
   learning_rate: 0.005
-  adjust_lr_every: 16
+  adjust_lr_every: 24
   load_epoch: 0
   print_every: 1000
-  val_every: 5000
-  export_every: 10000
+  val_every: 10000
+  export_every: 20000
 model:
   type: sage
   encoder: null
-  convs: [64, 128, 256, 512] # specify the OUT channels of sage convs
+  convs: [64, 128, 256, 512]
   edge_convs: 1
   decoder: 2
   concatenate: 0 # whether to concatenate (or add) target to source node embedding
   edge_prediction: 0
   normalization: b
-time:
-  start: ""
-  end: ""
 paths:
-  data: /home/rsulzer/data2/yanis_ETH3D
-  out: /home/rsulzer/data2/yanis_ETH3D/out/
-  train_split: train
-  val_split: test
-  test_split: test
+  data: /linkhome/rech/genlgm01/uku93eu/data/synthetic_room_dataset
+  out: /linkhome/rech/genlgm01/uku93eu/data/synthetic_room_out/dgnn
 regularization:
   cell_type: vol
   cell_norm: sqrt # [null, sqrt, log]

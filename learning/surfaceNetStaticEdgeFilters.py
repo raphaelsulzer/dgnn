@@ -202,11 +202,11 @@ class SurfaceNet(nn.Module):
         output = [n_batch, n_class, n_channels=1] float array: cell class scores
         """
 
-        if(self.clf.regularization.cell_reg_type):
+        if(self.clf.regularization.cell_type):
             x=data.all.x[data.batch_n_id, 1:].to(self.clf.temp.device) # put this batch on gpu
         else:
             x=data.all.x[data.batch_n_id, :].to(self.clf.temp.device) # put this batch on gpu
-        # if(self.clf.regularization.reg_type):
+        # if(self.clf.regularization.edge_type):
         #     xe=data_all.edge_attr[:,1:]
         # else:
         #     xe=data_all.edge_attr
@@ -241,12 +241,12 @@ class SurfaceNet(nn.Module):
             x_out = torch.zeros([data_all.x.size()[0], 1], dtype=torch.float32, requires_grad=False, device=self.clf.temp.device)
 
 
-        if (self.clf.regularization.cell_reg_type):
+        if (self.clf.regularization.cell_type):
             x_all = data_all.x[:, 1:]  # do not put it on gpu yet, because they will be used batch by batch
         else:
             x_all = data_all.x
 
-        if(self.clf.regularization.reg_type):
+        if(self.clf.regularization.edge_type):
             xe=data_all.edge_attr[:,1:]
         else:
             xe=data_all.edge_attr
@@ -281,12 +281,12 @@ class SurfaceNet(nn.Module):
         # subgraph sampling with ONE HOP necessary
         # needed when full graph does not fit in VRAM
 
-        if (self.clf.regularization.cell_reg_type):
+        if (self.clf.regularization.cell_type):
             x_all = data_all.x[:, 1:]  # do not put it on gpu yet, because they will be used batch by batch
         else:
             x_all = data_all.x
 
-        if(self.clf.regularization.reg_type):
+        if(self.clf.regularization.edge_type):
             xe=data_all.edge_attr[:,1:]
         else:
             xe=data_all.edge_attr
@@ -326,12 +326,12 @@ class SurfaceNet(nn.Module):
         # only works if full graph fits in VRAM
 
 
-        if(self.clf.regularization.cell_reg_type):
+        if(self.clf.regularization.cell_type):
             x=data_all.x[:, 1:].to(self.clf.temp.device) # put all on gpu, because they will all be used directly
         else:
             x=data_all.x[:, :].to(self.clf.temp.device)
 
-        if(self.clf.regularization.reg_type):
+        if(self.clf.regularization.edge_type):
             xe=data_all.edge_attr[:,1:].to(self.clf.temp.device)
         else:
             xe=data_all.edge_attr.to(self.clf.temp.device)
