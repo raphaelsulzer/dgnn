@@ -72,7 +72,8 @@ def generate(data, prediction, clf):
     # UPDATE: all I actually need to do is when I don't use the graph-cut, use the predicted labels for the infinite cell
     # however, I cannot do that with the current _3dt file, because I cannot retrieve the label of a specific infinite cell, because all infinite cells are the same in this current file
 
-    labels = F.log_softmax(prediction[data.infinite == 0], dim=-1).argmax(1).numpy()
+    # labels = F.log_softmax(prediction[data.infinite == 0], dim=-1).argmax(1).numpy()
+    labels = F.log_softmax(prediction, dim=-1).argmax(1).numpy()
 
     ### reconstruction
     mfile = os.path.join(data.path, data.gtfile + "_3dt.npz")
@@ -85,10 +86,14 @@ def generate(data, prediction, clf):
     if(clf.temp.graph_cut):
         mask = (edges >= 0).all(axis=1)
         gc_edges = edges[mask]
-        try:
-            labels=graph_cut(labels,prediction[data.infinite == 0],gc_edges,clf)
-        except:
-            print("WARNING: Graph cut for {} didn't work. Using raw predictions for mesh generation.".format(data.filename))
+        # try:
+            # labels=graph_cut(labels,prediction[data.infinite == 0],gc_edges,clf)
+        labels=graph_cut(labels,prediction,gc_edges,clf)
+
+        # except Exception as e:
+        #     print('\n')
+        #     print(e)
+        #     print("WARNING: Graph cut for {} didn't work. Using raw predictions for mesh generation.".format(data.filename))
 
     # add a last cell as the infinite cell
     for i, e in enumerate(edges):
@@ -140,8 +145,10 @@ def generate(data, prediction, clf):
         try:
             recon_occ = check_mesh_contains(recon_mesh,occ_points)
             eval_dict["iou"] = compute_iou(recon_occ, gt_occ)
-        except:
-            print("WARNING: Could not calculate IoU for mesh ",data['filename'])
+        except Exception as e:
+            print('\n')
+            print(e)
+            print("\nWARNING: Could not calculate IoU for mesh ",data['filename'])
             eval_dict["iou"] = 0.0
 
     ### Chamfer ###
@@ -156,7 +163,9 @@ def generate(data, prediction, clf):
 
         try:
             eval_dict["chamfer"] = compute_chamfer(gt_points, recon_points) # this is already two-sided
-        except:
+        except Exception as e:
+            print('\n')
+            print(e)
             print("WARNING: Could not calculate Chamfer distance for mesh ",data['filename'])
             eval_dict["iou"] = 0.0
 

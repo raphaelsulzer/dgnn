@@ -267,10 +267,39 @@ def getDataset(clf,dataset,mode):
             sys.exit(1)
         a=5
 
+    elif (dataset == "reconbench_infinite"):
+
+        if(mode == "validation"):
+            if(clf.validation.classes is None):
+                clf.validation.classes = ["anchor", "gargoyle", "lordquas", "daratech", "dc"]
+            clf.validation.path, _, clf.validation.scan_confs = getConfig(clf, clf.validation)
+            clf.validation.files = []
+            for s in clf.validation.scan_confs:
+                for m in clf.validation.classes:
+                    clf.validation.files.append({"path": clf.validation.path,
+                                                 "filename": m+"_"+str(s), "category":m,"id":"",
+                                                 "scan_conf":str(s), "gtfile": os.path.join("dgnn",m+"_"+str(s)),
+                                                 "ioufile":os.path.join("eval",m,"points.npz")})
+        elif(mode == "inference"):
+            if (clf.inference.classes is None):
+                clf.inference.classes = ["anchor", "gargoyle", "lordquas", "daratech", "dc"]
+            clf.inference.path, _, clf.inference.scan_confs = getConfig(clf, clf.inference)
+            clf.inference.files = []
+            for s in clf.inference.scan_confs:
+                for m in clf.inference.classes:
+                    clf.inference.files.append({"path": clf.inference.path,
+                                                "filename": m+"_"+str(s), "category":m,"id":"",
+                                                "scan_conf":str(s), "gtfile": os.path.join("dgnn",m+"_"+str(s)),
+                                                "ioufile":os.path.join("eval",m,"points.npz")})
+        else:
+            print("NOT IMPLEMENTED ERROR: can't train on reconbench dataset!")
+            sys.exit(1)
+        a=5
+
     elif(dataset == "ETH3D"):
 
         if (mode != "inference"):
-            print("NOT IMPLEMENTED ERROR: can't train on reconbench dataset!")
+            print("NOT IMPLEMENTED ERROR: can't train on ETH3D dataset!")
             sys.exit(1)
 
 
@@ -346,7 +375,7 @@ def getDataset(clf,dataset,mode):
 
 
         if (mode != "inference"):
-            print("NOT IMPLEMENTED ERROR: can't train on reconbench dataset!")
+            print("NOT IMPLEMENTED ERROR: can't train on terrestrial dataset!")
             sys.exit(1)
 
 
@@ -368,24 +397,5 @@ def getDataset(clf,dataset,mode):
 
     else:
 
-        if (mode == "validation"):
-
-            clf.validation.path, _, clf.validation.scan_confs = getConfig(clf, clf.validation)
-            clf.validation.files = []
-            for s in clf.validation.scan_confs:
-                clf.validation.files.append({"path": clf.validation.path,
-                                             "filename": str(s), "category": "", "id": "",
-                                             "scan_conf": str(s),
-                                             "gtfile": os.path.join("gt", str(s))})
-        elif (mode == "inference"):
-            clf.inference.path, _, clf.inference.scan_confs = getConfig(clf, clf.inference)
-            clf.inference.files = []
-            for s in clf.inference.scan_confs:
-                clf.inference.files.append({"path": clf.inference.path,
-                                            "filename": str(s), "category": "", "id": "",
-                                            "scan_conf": str(s),
-                                            "gtfile": os.path.join("gt", str(s))})
-        else:
-            print("NOT IMPLEMENTED ERROR: can't train on reconbench dataset!")
-            sys.exit(1)
-        a = 5
+        print("\nERROR: {} is not a valid dataset".format(dataset))
+        sys.exit(1)
