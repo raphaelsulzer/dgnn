@@ -14,7 +14,7 @@ inference:
   dataset: synthetic_room_dataset
   classes: null
   scan_confs: [9]
-  shapes_per_conf_per_class: 10
+  shapes_per_conf_per_class: 1
   files: null
   batch_size: 0
   per_layer: 1
@@ -28,31 +28,31 @@ validation:
   dataset: synthetic_room_dataset
   classes: null
   scan_confs: [9]
-  shapes_per_conf_per_class: 10
+  shapes_per_conf_per_class: 5
   batch_size: 0
   per_layer: 1
-  graph_cut: true
-  fix_orientation: true
+  graph_cut: false
+  fix_orientation: false
   metrics: [ "iou" ]
 training:
   dataset: synthetic_room_dataset
   classes: null
   scan_confs: [9]
   data_percentage: 0.9
-  shapes_per_conf_per_class: 400
-  batch_size: 128
+  shapes_per_conf_per_class: 100
+  batch_size: 256
   epochs: 100
   loss: kl
   learning_rate: 0.005
   adjust_lr_every: 24
   load_epoch: 0
-  print_every: 1000
-  val_every: 10000
-  export_every: 20000
+  print_every: 10000
+  val_every: 50000
+  export_every: 50000
 model:
   type: sage
   encoder: null
-  convs: [64, 128, 256, 512]
+  convs: [128, 256, 512, 1024]
   edge_convs: 1
   decoder: 2
   concatenate: 0 # whether to concatenate (or add) target to source node embedding
