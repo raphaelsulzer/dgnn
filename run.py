@@ -252,6 +252,20 @@ def createModel(clf):
 
     return model
 
+def createResultsDF(clf):
+    # create the results df
+    cols = ['iteration', 'epoch',
+               'train_loss_cell', 'train_loss_reg', 'train_loss_total', 'train_OA',
+               'test_loss_cell', 'test_loss_reg', 'test_loss_total', 'test_OA',
+                'test_current_'+clf.validation.metrics[0], 'test_best_'+clf.validation.metrics[0]]
+    clf.results_df = pd.DataFrame(columns=cols)
+    if(clf.validation.metrics[0] == "loss" or clf.validation.metrics[0] == "chamfer"):
+        clf.best_metric = 100000
+    elif(clf.validation.metrics[0] == "iou" or clf.validation.metrics[0] == "oa"):
+        clf.best_metric = 0
+    else:
+        print("ERROR: {} is not a valid validation metric. Choose either loss, chamfer or iou.".format(clf.validation.metric))
+        sys.exit(1)
 
 
 
@@ -261,16 +275,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train SurfaceNet')
 
     parser.add_argument('-t', '--training', action='store_true',
-                        help='do training')
+                        help='run training')
     parser.add_argument('-i', '--inference', action='store_true',
-                        help='do inference after training')
+                        help='run inference')
     parser.add_argument('-c', '--conf', type=str, default="configs/pretrained/reconbench.yaml",
                         help='which config to load')
     parser.add_argument('--gpu', type=int, default=0,
-                        help='on which gpu device [0,1] to train. default: 0')
+                        help='on which gpu to train. default: 0')
     args = parser.parse_args()
-
-    # args.conf = 'reconbench'
 
     if(not os.path.isabs(args.conf)):
         args.conf = os.path.join(os.path.dirname(__file__),args.conf)
@@ -300,19 +312,7 @@ if __name__ == "__main__":
     clf.files.config = os.path.join(clf.paths.out,"config.yaml")
     clf.files.results = os.path.join(clf.paths.out,"metrics","results.csv")
 
-    # create the results df
-    cols = ['iteration', 'epoch',
-               'train_loss_cell', 'train_loss_reg', 'train_loss_total', 'train_OA',
-               'test_loss_cell', 'test_loss_reg', 'test_loss_total', 'test_OA',
-                'test_current_'+clf.validation.metrics[0], 'test_best_'+clf.validation.metrics[0]]
-    clf.results_df = pd.DataFrame(columns=cols)
-    if(clf.validation.metrics[0] == "loss" or clf.validation.metrics[0] == "chamfer"):
-        clf.best_metric = 100000
-    elif(clf.validation.metrics[0] == "iou" or clf.validation.metrics[0] == "oa"):
-        clf.best_metric = 0
-    else:
-        print("ERROR: {} is not a valid validation metric. Choose either loss, chamfer or iou.".format(clf.validation.metric))
-        sys.exit(1)
+
 
 
     ################# print time before training/classification #################
@@ -324,6 +324,7 @@ if __name__ == "__main__":
 
     ############ TRAINING #############
     if(args.training):
+        createResultsDF(clf)
         clf.temp.graph_cut = clf.validation.graph_cut; clf.temp.fix_orientation = clf.validation.fix_orientation; clf.temp.metrics = clf.validation.metrics
         # log output
         # copy conf file to out dir

@@ -249,7 +249,8 @@ def getDataset(clf,dataset,mode):
                 for m in clf.validation.classes:
                     clf.validation.files.append({"path": clf.validation.path,
                                                  "filename": m+"_"+str(s), "category":m,"id":"",
-                                                 "scan_conf":str(s), "gtfile": os.path.join("gt",str(s),m+"_"+str(s))})
+                                                 "scan_conf":str(s), "gtfile": os.path.join("gt",str(s),m+"_"+str(s)),
+                                                 "ioufile":os.path.join("eval",m,"points.npz")})
         elif(mode == "inference"):
             if (clf.inference.classes is None):
                 clf.inference.classes = ["anchor", "gargoyle", "lordquas", "daratech", "dc"]
@@ -259,7 +260,8 @@ def getDataset(clf,dataset,mode):
                 for m in clf.inference.classes:
                     clf.inference.files.append({"path": clf.inference.path,
                                                 "filename": m+"_"+str(s), "category":m,"id":"",
-                                                "scan_conf":str(s), "gtfile": os.path.join("gt",str(s),m+"_"+str(s))})
+                                                "scan_conf":str(s), "gtfile": os.path.join("gt",str(s),m+"_"+str(s)),
+                                                "ioufile":os.path.join("eval",m,"points.npz")})
         else:
             print("NOT IMPLEMENTED ERROR: can't train on reconbench dataset!")
             sys.exit(1)
