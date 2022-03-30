@@ -91,18 +91,15 @@ def generate(data, prediction, clf):
             print("WARNING: Graph cut for {} didn't work. Using raw predictions for mesh generation.".format(data.filename))
 
     # add a last cell as the infinite cell
-    for i, e in enumerate(edges):
-        for j, c in enumerate(e):
-            if (c == -1):
-                edges[i, j] = labels.shape[0]
+    edges[(edges[:,0] == -1).astype(bool),0] = labels.shape[0]
+    edges[(edges[:,1] == -1).astype(bool),1] = labels.shape[0]
+
     # make it an outside cell
     labels=np.append(labels, 1)
 
-    # extract the interface and save it as a surface mesh
-    interfaces = []
-    for fi,f in enumerate(edges):
-        if(labels[f[0]]!=labels[f[1]]):
-            interfaces.append(fi)
+    # get index of interface facets (i.e. where labels are not equal)
+    interfaces = np.argwhere(labels[edges[:,0]]!=labels[edges[:,1]])
+    interfaces = np.squeeze(interfaces)
 
     recon_mesh = trimesh.Trimesh(mdata["vertices"], mdata["facets"][interfaces],process=True)
     if(clf.temp.fix_orientation):
