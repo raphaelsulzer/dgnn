@@ -64,71 +64,36 @@ def generate(data, prediction, clf):
     mesh (for chamfer).
     It returns the mesh (as trimesh object) and a dictionary with the evaluation metrics."""
 
-    open = False
-
-    # TODO: make it compatible with open scenes. This means I cannot force the infinite cells to be outside anymore.
-    # So far they are classified by the network, so could use that label, especially when regularization is turned on.
-    # First step is to remove the code where infinite cells are hard classified as outside cells. Then maybe it means I need to
-    # include infinite cells in the _3dt file to correctly retrieve their label from the network and use it in mesh generation?
-    # UPDATE: all I actually need to do is when I don't use the graph-cut, use the predicted labels for the infinite cell
-    # however, I cannot do that with the current _3dt file, because I cannot retrieve the label of a specific infinite cell, because all infinite cells are the same in this current file
-
+    # get an initial label to init the graph cut, as max of prediction
     labels = F.log_softmax(prediction, dim=-1).argmax(1).numpy()
 
-
-    ### reconstruction
     mfile = os.path.join(data.path, data.gtfile + "_3dt.npz")
-
     mdata = np.load(mfile)
-    # if open:
-    #     assert(len(labels)==len(mdata["tetrahedra"]))
-    # else:
-    #     assert (len(labels) == len(mdata["tetrahedra"][mdata["inf_tetrahedra"]==0]))
-    # take out all the infinite cells for the graph cut
+    assert (len(labels) == len(mdata["tetrahedra"]))
     edges = mdata['nfacets']
-    # TODO: check if the worse result is because of the graph cut or there is still some indexing that is wrong
-    # can do this by using the new data, but taking out infinite cells in the beginning, and treating everything
-    # how I treated it before
-    if not open:
-        for i, e in enumerate(edges):
-            for j, c in enumerate(e):
-                if (mdata["inf_tetrahedra"][c]):
-                    edges[i, j] = -1
 
+    # graph cut
     if(clf.temp.graph_cut):
-        mask = (edges >= 0).all(axis=1)
-        gc_edges = edges[mask]
-        # try:
-        if open:
+        try:
             labels = graph_cut(labels, prediction, edges, clf)
-        else:
-            labels=graph_cut(labels,prediction,gc_edges,clf)
+        except Exception as e:
+            print('\n')
+            print(e)
+            print("WARNING: Graph cut for {} didn't work. Using raw predictions for mesh generation.".format(data.filename))
 
-        # except Exception as e:
-        #     print('\n')
-        #     print(e)
-        #     print("WARNING: Graph cut for {} didn't work. Using raw predictions for mesh generation.".format(data.filename))
+    # open or closed object?
+    # if open object, set closed to False, and the graph-cut / network label will be used for infinite cells
+    closed = True
+    if closed:
+        # forcing infinite cells to be outside
+        labels[mdata["inf_tetrahedra"].astype(bool)] = 1
 
-    # add a last cell as the infinite cell
-    if not open:
-        for i, e in enumerate(edges):
-            for j, c in enumerate(e):
-                if (c == -1):
-                    edges[i, j] = labels.shape[0]
-        # make it an outside cell
-        labels=np.append(labels, 1)
+    # get index of interface facets (i.e. where labels are not equal)
+    interfaces = np.argwhere(labels[edges[:,0]]!=labels[edges[:,1]])
+    interfaces = np.squeeze(interfaces)
 
-    # extract the interface and save it as a surface mesh
-    interfaces = []
-    for fi,f in enumerate(edges):
-        if(labels[f[0]]!=labels[f[1]]
-                # and not mdata["inf_facets"][f[0]]
-                # and not mdata["inf_facets"][f[1]]
-        ):
-            interfaces.append(fi)
-
-
-    recon_mesh = trimesh.Trimesh(mdata["vertices"], mdata["facets"][interfaces],process=True)
+    # make the mesh
+    recon_mesh = trimesh.Trimesh(mdata["vertices"], mdata["facets"][interfaces], process=True)
     if(clf.temp.fix_orientation):
         trimesh.repair.fix_normals(recon_mesh)
         # trimesh.repair.fix_inversion(recon_mesh)

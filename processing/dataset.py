@@ -62,9 +62,9 @@ def getDataset(clf,dataset,mode):
                     with open(splitfile, 'r') as f: models = f.read().split('\n')
                     models = models[:clf.training.shapes_per_conf_per_class]
                     for m in models:
-                        if os.path.exists(os.path.join(clf.training.path, c, "gt", str(s), m)):
+                        if os.path.exists(os.path.join(clf.training.path, c, "dgnn", str(s), m)):
                             d = {"path": os.path.join(clf.training.path,c), "filename": c+"_"+m,
-                                 "category": c, "id": m, "scan_conf": str(s), "gtfile": os.path.join("gt",str(s),m,c+"_"+m)}
+                                 "category": c, "id": m, "scan_conf": str(s), "gtfile": os.path.join("dgnn",str(s),m,c+"_"+m)}
                             clf.training.files.append(d)
 
         elif(mode == "validation"):
@@ -77,9 +77,9 @@ def getDataset(clf,dataset,mode):
                     with open(splitfile, 'r') as f: models = f.read().split('\n')
                     models = models[:clf.validation.shapes_per_conf_per_class]
                     for m in models:
-                        if os.path.exists(os.path.join(clf.validation.path, c, "gt", str(s), m)):
+                        if os.path.exists(os.path.join(clf.validation.path, c, "dgnn", str(s), m)):
                             d = {"path": os.path.join(clf.validation.path,c), "filename": c+"_"+m, "category": c,
-                                 "id": m, "scan_conf": str(s), "gtfile": os.path.join("gt",str(s),m,c+"_"+m)}
+                                 "id": m, "scan_conf": str(s), "gtfile": os.path.join("dgnn",str(s),m,c+"_"+m)}
                             clf.validation.files.append(d)
 
         elif(mode == "inference"):
@@ -103,9 +103,9 @@ def getDataset(clf,dataset,mode):
                         models = list(filter(None, models))
                         models = models[:clf.inference.shapes_per_conf_per_class]
                         for m in models:
-                            if os.path.exists(os.path.join(clf.inference.path, c, "gt", str(s), m)):
+                            if os.path.exists(os.path.join(clf.inference.path, c, "dgnn", str(s), m)):
                                 d = {"path": os.path.join(clf.inference.path, c), "filename": c + "_" + m,
-                                     "category": c, "id": m, "scan_conf": str(s), "gtfile": os.path.join("gt",str(s),m,c+"_"+m)}
+                                     "category": c, "id": m, "scan_conf": str(s), "gtfile": os.path.join("dgnn",str(s),m,c+"_"+m)}
                                 clf.inference.files.append(d)
         else:
             print("ERROR: not a valid method for getDataset.py")
@@ -128,10 +128,10 @@ def getDataset(clf,dataset,mode):
                         models = f.read().split('\n')
                     models = models[:clf.training.shapes_per_conf_per_class]
                     for m in models:
-                        if os.path.exists(os.path.join(clf.training.path, c, m, "gt", str(s), m)):
+                        if os.path.exists(os.path.join(clf.training.path, c, m, "dgnn", str(s), m)):
                             d = {"path": os.path.join(clf.training.path, c), "filename": str(s),
                                  "category": c,
-                                 "id": m, "scan_conf": str(s), "gtfile": os.path.join("gt",str(s))}
+                                 "id": m, "scan_conf": str(s), "gtfile": os.path.join("dgnn",str(s))}
                             clf.training.files.append(d)
 
         elif (mode == "validation"):
@@ -145,10 +145,10 @@ def getDataset(clf,dataset,mode):
                         models = f.read().split('\n')
                     models = models[:clf.validation.shapes_per_conf_per_class]
                     for m in models:
-                        if os.path.exists(os.path.join(clf.validation.path, c, m, "gt", str(s), m)):
+                        if os.path.exists(os.path.join(clf.validation.path, c, m, "dgnn", str(s), m)):
                             d = {"path": os.path.join(clf.validation.path, c), "filename": str(s),
                                  "category": c,
-                                 "id": m, "scan_conf": str(s), "gtfile": os.path.join("gt",str(s))}
+                                 "id": m, "scan_conf": str(s), "gtfile": os.path.join("dgnn",str(s))}
                             clf.validation.files.append(d)
 
         elif (mode == "inference"):
@@ -173,9 +173,9 @@ def getDataset(clf,dataset,mode):
                         models = list(filter(None, models))
                         models = models[:clf.inference.shapes_per_conf_per_class]
                         for m in models:
-                            if os.path.exists(os.path.join(clf.inference.path, c, m, "gt", str(s)+"_3dt.npz")):
+                            if os.path.exists(os.path.join(clf.inference.path, c, m, "dgnn", str(s)+"_3dt.npz")):
                                 d = {"path": os.path.join(clf.inference.path, c, m), "filename": c + "_" + m,
-                                     "category": c, "id": m, "scan_conf": str(s), "gtfile": os.path.join("gt",str(s))}
+                                     "category": c, "id": m, "scan_conf": str(s), "gtfile": os.path.join("dgnn",str(s))}
                                 clf.inference.files.append(d)
         else:
             print("ERROR: not a valid method for getDataset.py")
@@ -194,9 +194,9 @@ def getDataset(clf,dataset,mode):
                 for s in clf.training.scan_confs:
                     models = np.loadtxt(os.path.join(clf.training.path,c, "train.lst"), dtype=str)[:clf.training.shapes_per_conf_per_class]
                     for m in models:
-                        if os.path.exists(os.path.join(clf.training.path, c, m, "gt")):
+                        if os.path.exists(os.path.join(clf.training.path, c, m, "dgnn")):
                             d = {"path": os.path.join(clf.training.path,c,m), "filename": m, "category": c, "id": m, "scan_conf": str(s),
-                                 "gtfile":os.path.join("gt",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
+                                 "gtfile":os.path.join("dgnn",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
                             clf.training.files.append(d)
 
         elif(mode == "validation"):
@@ -207,9 +207,9 @@ def getDataset(clf,dataset,mode):
                 for s in clf.validation.scan_confs:
                     models = np.loadtxt(os.path.join(clf.validation.path,c, "val.lst"), dtype=str)[:clf.validation.shapes_per_conf_per_class]
                     for m in models:
-                        if os.path.exists(os.path.join(clf.validation.path, c, m, "gt")):
+                        if os.path.exists(os.path.join(clf.validation.path, c, m, "dgnn")):
                             d = {"path": os.path.join(clf.validation.path, c, m), "filename": m, "category": c, "id": m,"scan_conf": str(s),
-                                 "gtfile":os.path.join("gt",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
+                                 "gtfile":os.path.join("dgnn",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
                             clf.validation.files.append(d)
 
         elif(mode == "inference"):
@@ -221,7 +221,7 @@ def getDataset(clf,dataset,mode):
                         n = f.split('_')
                         temp.append({"path": os.path.join(clf.inference.path,n[0]), "filename": n[0]+"_"+n[1],
                                      "category":n[0],"id":n[1], "scan_conf":str(s),
-                                     "gtfile":os.path.join("gt",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")})
+                                     "gtfile":os.path.join("dgnn",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")})
                     clf.inference.files = temp
                 return
             else:
@@ -230,9 +230,9 @@ def getDataset(clf,dataset,mode):
                     for s in clf.data.scan_confs:
                         models = np.loadtxt(os.path.join(clf.inference.path, c, m, "test.lst"), dtype=str)[:clf.inference.shapes_per_conf_per_class]
                         for m in models:
-                            if os.path.exists(os.path.join(clf.inference.path,c,"gt")):
+                            if os.path.exists(os.path.join(clf.inference.path,c,"dgnn")):
                                 d = {"path": os.path.join(clf.inference.path, c, m), "filename": m, "category": c,"id": m,
-                                     "scan_conf": str(s), "gtfile":os.path.join("gt",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
+                                     "scan_conf": str(s), "gtfile":os.path.join("dgnn",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
                                 clf.inference.files.append(d)
         else:
             print("ERROR: not a valid method for getDataset.py")
@@ -249,7 +249,7 @@ def getDataset(clf,dataset,mode):
                 for m in clf.validation.classes:
                     clf.validation.files.append({"path": clf.validation.path,
                                                  "filename": m+"_"+str(s), "category":m,"id":"",
-                                                 "scan_conf":str(s), "gtfile": os.path.join("gt",str(s),m+"_"+str(s)),
+                                                 "scan_conf":str(s), "gtfile": os.path.join("dgnn",str(s),m+"_"+str(s)),
                                                  "ioufile":os.path.join("eval",m,"points.npz")})
         elif(mode == "inference"):
             if (clf.inference.classes is None):
@@ -260,7 +260,7 @@ def getDataset(clf,dataset,mode):
                 for m in clf.inference.classes:
                     clf.inference.files.append({"path": clf.inference.path,
                                                 "filename": m+"_"+str(s), "category":m,"id":"",
-                                                "scan_conf":str(s), "gtfile": os.path.join("gt",str(s),m+"_"+str(s)),
+                                                "scan_conf":str(s), "gtfile": os.path.join("dgnn",str(s),m+"_"+str(s)),
                                                 "ioufile":os.path.join("eval",m,"points.npz")})
         else:
             print("NOT IMPLEMENTED ERROR: can't train on reconbench dataset!")
@@ -278,7 +278,7 @@ def getDataset(clf,dataset,mode):
                 for m in clf.validation.classes:
                     clf.validation.files.append({"path": clf.validation.path,
                                                  "filename": m+"_"+str(s), "category":m,"id":"",
-                                                 "scan_conf":str(s), "gtfile": os.path.join("dgnn",m+"_"+str(s)),
+                                                 "scan_conf":str(s), "gtfile": os.path.join("dgnn",str(s),m+"_"+str(s)),
                                                  "ioufile":os.path.join("eval",m,"points.npz")})
         elif(mode == "inference"):
             if (clf.inference.classes is None):
@@ -289,7 +289,7 @@ def getDataset(clf,dataset,mode):
                 for m in clf.inference.classes:
                     clf.inference.files.append({"path": clf.inference.path,
                                                 "filename": m+"_"+str(s), "category":m,"id":"",
-                                                "scan_conf":str(s), "gtfile": os.path.join("dgnn",m+"_"+str(s)),
+                                                "scan_conf":str(s), "gtfile": os.path.join("dgnn",str(s),m+"_"+str(s)),
                                                 "ioufile":os.path.join("eval",m,"points.npz")})
         else:
             print("NOT IMPLEMENTED ERROR: can't train on reconbench dataset!")
@@ -313,9 +313,9 @@ def getDataset(clf,dataset,mode):
                 # models = list(filter(None, models))
                 # models = models[:clf.inference.shapes_per_conf_per_class]
                 # for m in models:
-                if os.path.exists(os.path.join(clf.inference.path, c, "gt", c+"_3dt.npz")):
+                if os.path.exists(os.path.join(clf.inference.path, c, "dgnn", c+"_3dt.npz")):
                     d = {"path": os.path.join(clf.inference.path, c), "filename": c,
-                         "category": c, "id": "", "scan_conf": str(s), "gtfile": os.path.join("gt",c)}
+                         "category": c, "id": "", "scan_conf": str(s), "gtfile": os.path.join("dgnn",c)}
                     clf.inference.files.append(d)
 
 
@@ -389,9 +389,9 @@ def getDataset(clf,dataset,mode):
                 models = list(filter(None, models))
                 models = models[:clf.inference.shapes_per_conf_per_class]
                 for m in models:
-                    if os.path.exists(os.path.join(clf.inference.path, c, "OC","gt", m+"_3dt.npz")):
+                    if os.path.exists(os.path.join(clf.inference.path, c, "OC","dgnn", m+"_3dt.npz")):
                         d = {"path": os.path.join(clf.inference.path, c), "filename": m,
-                             "category": c, "id": "", "scan_conf": str(s), "gtfile": os.path.join("OC","gt",m)}
+                             "category": c, "id": "", "scan_conf": str(s), "gtfile": os.path.join("OC","dgnn",m)}
                         clf.inference.files.append(d)
 
 

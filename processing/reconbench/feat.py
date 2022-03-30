@@ -10,13 +10,14 @@ def main(args):
     #     return
 
     # extract features from mpu
-    command = [args.sure_dir + "/feat",
+    command = [args.meshtools_dir + "/feat",
                "-w", str(args.wdir),
                "-i", str(args.i[:-4]),
                "-o", str(args.o),
                "-g", str(args.g),
+               "--occ", str(args.occ),
                "-s", "npz",
-               "e", ""]
+               "-e", ""]
     print("run command: ", command)
     p = subprocess.Popen(command)
     p.wait()
@@ -32,7 +33,7 @@ if __name__ == "__main__":
                         help='working directory which should include the different scene folders.')
     parser.add_argument('--overwrite', type=int, default=0,
                         help='overwrite existing files')
-    parser.add_argument('--sure_dir', type=str, default="/home/raphael/cpp/surfaceReconstruction/build/release",
+    parser.add_argument('--meshtools_dir', type=str, default="/home/raphael/cpp/mesh-tools/build/release",
                         help='Indicate the sure build directory, pointing to .../build/release folder starting from user_dir')
     parser.add_argument('--conf', type=int, default=4,
                         help='The scan conf')
@@ -42,7 +43,7 @@ if __name__ == "__main__":
 
 
     ### train
-    args.input = os.listdir(os.path.join(args.dataset_dir, "3_scan"))
+    args.input = os.listdir(os.path.join(args.dataset_dir, "scan"))
 
     conf_dir = os.path.join(args.dataset_dir,"gt",str(args.conf))
     if not os.path.exists(conf_dir):
@@ -50,16 +51,16 @@ if __name__ == "__main__":
 
     for i in args.input:
         args.wdir = os.path.join(args.dataset_dir)
-        args.i = os.path.join("3_scan",i)
+        args.i = os.path.join("scan",i)
         name = i.split('.')[0]
         conf = name.split('_')[1]
         args.o = name
-        args.g = "2_watertight/"+i.split('_')[0]+".off"
+        args.g = "mesh/"+i.split('_')[0]+".off"
         main(args)
 
         # move
-        in_dir = os.path.join(args.dataset_dir, "gt", name + "*")
-        out_dir = os.path.join(args.dataset_dir, "gt", conf)
+        in_dir = os.path.join(args.dataset_dir, "dgnn", name + "*")
+        out_dir = os.path.join(args.dataset_dir, "dgnn", conf)
         for f in glob.glob(in_dir):
             if not os.path.exists(out_dir):
                 os.makedirs(out_dir)
