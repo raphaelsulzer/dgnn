@@ -64,6 +64,7 @@ def generate(data, prediction, clf):
     mesh (for chamfer).
     It returns the mesh (as trimesh object) and a dictionary with the evaluation metrics."""
 
+    open = False
 
     # TODO: make it compatible with open scenes. This means I cannot force the infinite cells to be outside anymore.
     # So far they are classified by the network, so could use that label, especially when regularization is turned on.
@@ -72,23 +73,36 @@ def generate(data, prediction, clf):
     # UPDATE: all I actually need to do is when I don't use the graph-cut, use the predicted labels for the infinite cell
     # however, I cannot do that with the current _3dt file, because I cannot retrieve the label of a specific infinite cell, because all infinite cells are the same in this current file
 
-    # labels = F.log_softmax(prediction[data.infinite == 0], dim=-1).argmax(1).numpy()
     labels = F.log_softmax(prediction, dim=-1).argmax(1).numpy()
+
 
     ### reconstruction
     mfile = os.path.join(data.path, data.gtfile + "_3dt.npz")
 
     mdata = np.load(mfile)
-    assert(len(labels)==len(mdata["tetrahedra"]))
-
+    # if open:
+    #     assert(len(labels)==len(mdata["tetrahedra"]))
+    # else:
+    #     assert (len(labels) == len(mdata["tetrahedra"][mdata["inf_tetrahedra"]==0]))
     # take out all the infinite cells for the graph cut
     edges = mdata['nfacets']
+    # TODO: check if the worse result is because of the graph cut or there is still some indexing that is wrong
+    # can do this by using the new data, but taking out infinite cells in the beginning, and treating everything
+    # how I treated it before
+    if not open:
+        for i, e in enumerate(edges):
+            for j, c in enumerate(e):
+                if (mdata["inf_tetrahedra"][c]):
+                    edges[i, j] = -1
+
     if(clf.temp.graph_cut):
         mask = (edges >= 0).all(axis=1)
         gc_edges = edges[mask]
         # try:
-            # labels=graph_cut(labels,prediction[data.infinite == 0],gc_edges,clf)
-        labels=graph_cut(labels,prediction,gc_edges,clf)
+        if open:
+            labels = graph_cut(labels, prediction, edges, clf)
+        else:
+            labels=graph_cut(labels,prediction,gc_edges,clf)
 
         # except Exception as e:
         #     print('\n')
@@ -96,18 +110,23 @@ def generate(data, prediction, clf):
         #     print("WARNING: Graph cut for {} didn't work. Using raw predictions for mesh generation.".format(data.filename))
 
     # add a last cell as the infinite cell
-    for i, e in enumerate(edges):
-        for j, c in enumerate(e):
-            if (c == -1):
-                edges[i, j] = labels.shape[0]
-    # make it an outside cell
-    labels=np.append(labels, 1)
+    if not open:
+        for i, e in enumerate(edges):
+            for j, c in enumerate(e):
+                if (c == -1):
+                    edges[i, j] = labels.shape[0]
+        # make it an outside cell
+        labels=np.append(labels, 1)
 
     # extract the interface and save it as a surface mesh
     interfaces = []
     for fi,f in enumerate(edges):
-        if(labels[f[0]]!=labels[f[1]]):
+        if(labels[f[0]]!=labels[f[1]]
+                # and not mdata["inf_facets"][f[0]]
+                # and not mdata["inf_facets"][f[1]]
+        ):
             interfaces.append(fi)
+
 
     recon_mesh = trimesh.Trimesh(mdata["vertices"], mdata["facets"][interfaces],process=True)
     if(clf.temp.fix_orientation):
