@@ -64,7 +64,8 @@ def getDataset(clf,dataset,mode):
                     for m in models:
                         if os.path.exists(os.path.join(clf.training.path, c, "gt", str(s), m)):
                             d = {"path": os.path.join(clf.training.path,c), "filename": c+"_"+m,
-                                 "category": c, "id": m, "scan_conf": str(s), "gtfile": os.path.join("gt",str(s),m,c+"_"+m)}
+                                 "category": c, "id": m, "scan_conf": str(s),
+                                 "gtfile": os.path.join("gt",str(s),m,c+"_"+m), "ioufile": os.path.join("eval",m,"points.npz")}
                             clf.training.files.append(d)
 
         elif(mode == "validation"):
@@ -78,8 +79,9 @@ def getDataset(clf,dataset,mode):
                     models = models[:clf.validation.shapes_per_conf_per_class]
                     for m in models:
                         if os.path.exists(os.path.join(clf.validation.path, c, "gt", str(s), m)):
-                            d = {"path": os.path.join(clf.validation.path,c), "filename": c+"_"+m, "category": c,
-                                 "id": m, "scan_conf": str(s), "gtfile": os.path.join("gt",str(s),m,c+"_"+m)}
+                            d = {"path": os.path.join(clf.validation.path,c), "filename": c+"_"+m,
+                                 "category": c, "id": m, "scan_conf": str(s),
+                                 "gtfile": os.path.join("gt",str(s),m,c+"_"+m), "ioufile": os.path.join("eval",m,"points.npz")}
                             clf.validation.files.append(d)
 
         elif(mode == "inference"):
@@ -105,7 +107,8 @@ def getDataset(clf,dataset,mode):
                         for m in models:
                             if os.path.exists(os.path.join(clf.inference.path, c, "gt", str(s), m)):
                                 d = {"path": os.path.join(clf.inference.path, c), "filename": c + "_" + m,
-                                     "category": c, "id": m, "scan_conf": str(s), "gtfile": os.path.join("gt",str(s),m,c+"_"+m)}
+                                     "category": c, "id": m, "scan_conf": str(s),
+                                     "gtfile": os.path.join("gt",str(s),m,c+"_"+m), "ioufile": os.path.join("eval",m,"points.npz")}
                                 clf.inference.files.append(d)
         else:
             print("ERROR: not a valid method for getDataset.py")

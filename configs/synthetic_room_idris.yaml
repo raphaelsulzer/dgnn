@@ -28,8 +28,8 @@ validation:
   dataset: synthetic_room_dataset
   classes: null
   scan_confs: [9]
-  shapes_per_conf_per_class: 5
-  batch_size: 0
+  shapes_per_conf_per_class: 2
+  batch_size: 128
   per_layer: 1
   graph_cut: false
   fix_orientation: false
@@ -39,8 +39,8 @@ training:
   classes: null
   scan_confs: [9]
   data_percentage: 0.9
-  shapes_per_conf_per_class: 100
-  batch_size: 256
+  shapes_per_conf_per_class: 5
+  batch_size: 128
   epochs: 100
   loss: kl
   learning_rate: 0.005

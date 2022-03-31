@@ -37,12 +37,14 @@ def training(clf):
     print("Load {} graph(s) for training:".format(len(clf.training.files)))
     for mesh in tqdm(clf.training.files, ncols=50):
         # print("\t-",graph.split("/")[-1])
-        try:
-            my_loader.run(mesh)
-            all_graphs.append(Data(x=my_loader.features, y=my_loader.gt, infinite=my_loader.infinite,
-                     edge_index=my_loader.edge_lists, edge_attr=my_loader.edge_features, pos=None))
-        except:
-            print("WARNING: Couldn't load object ",mesh)
+        # try:
+        my_loader.run(mesh)
+        all_graphs.append(Data(x=my_loader.features, y=my_loader.gt, infinite=my_loader.infinite,
+                 edge_index=my_loader.edge_lists, edge_attr=my_loader.edge_features, pos=None))
+        # except Exception as e:
+        #     print('\n')
+        #     print(e)
+        #     print("WARNING: Couldn't load object ",mesh)
 
 
     print("\nLoaded graphs:")
@@ -84,6 +86,7 @@ def training(clf):
     if(clf.validation.files is not None):
         data.validation_names = clf.validation.files
         clf.temp.batch_size = clf.validation.batch_size
+        clf.temp.per_layer = clf.validation.per_layer
         print("\nLoad {} graph(s) for testing:".format(len(data.validation_names)))
         for file in tqdm(clf.validation.files, ncols=50):
             # print("\t-", file)
@@ -126,6 +129,7 @@ def inference(clf):
 
     clf.temp.device = "cuda:" + str(clf.temp.args.gpu)
     clf.temp.batch_size = clf.inference.batch_size
+    clf.temp.per_layer = clf.inference.per_layer
     clf.temp.current_epoch = 1000 # needed in case regularization is turned on, to compute reg_loss
     # clf.regularization.reg_epoch = None
     # print("Turn of regularization for inference")

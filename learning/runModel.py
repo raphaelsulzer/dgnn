@@ -176,13 +176,13 @@ class Trainer():
                 #     torch.sum(data.batch_gt[:, 2] == F.log_softmax(logits_cell, dim=-1).argmax(1).cpu()).item(),
                 #     data.batch_x.shape[0])
                 metrics.addOAItem(
-                    torch.sum((data.batch_gt[:,0]>data.batch_gt[:,1]).type(torch.int64) == F.log_softmax(logits_cell, dim=-1).argmax(1).cpu()).item(),
+                    torch.sum(data.batch_gt.argmax(dim=1) == F.log_softmax(logits_cell, dim=-1).argmax(dim=1).cpu()).item(),
                     data.batch_x.shape[0])
             elif(clf.training.loss == "bce"):
                 # supervise with graph cut label
                 cell_loss = F.binary_cross_entropy_with_logits(logits_cell.squeeze(dim=-1), data.batch_gt[:, 3].to(clf.temp.device), reduction='none')
                 metrics.addOAItem(
-                    torch.sum(data.batch_gt[:, 3] == torch.round(F.sigmoid(logits_cell.squeeze(dim=-1))).cpu()).item(),
+                    torch.sum(data.batch_gt.argmax(dim=1) == torch.round(F.sigmoid(logits_cell.squeeze(dim=-1))).cpu()).item(),
                     data.batch_x.shape[0])
             elif (clf.training.loss == "mse"):
                 cell_loss = F.mse_loss(F.sigmoid(logits_cell).squeeze(), data.batch_gt[:, 0].to(clf.temp.device))
@@ -411,19 +411,22 @@ class Trainer():
     ######################################################
     def inference(self, data_inference, subgraph_loader, clf):
 
+        '''implements three different methods for inference.
+        this function is also used for validation'''
+
         logits_edge = None
         self.model.eval()  # batchnorms in eval mode
         with torch.no_grad():
-            if(clf.inference.per_layer and clf.temp.batch_size):
+            if(clf.temp.per_layer and clf.temp.batch_size):
                 # print("\nInference per layer per batch")
                 assert(subgraph_loader)
                 assert(len(subgraph_loader.sizes)==1)
                 logits_cell = self.model.inference_layer_batch(data_inference, subgraph_loader)
-            elif(clf.inference.per_layer and not clf.temp.batch_size):
+            elif(clf.temp.per_layer and not clf.temp.batch_size):
                 # print("\nInference per layer")
                 assert(not subgraph_loader)
                 logits_cell = self.model.inference_layer(data_inference)
-            elif(not clf.inference.per_layer and clf.temp.batch_size):
+            elif(not clf.temp.per_layer and clf.temp.batch_size):
                 # print("\nInference per batch")
                 assert(subgraph_loader)
                 logits_cell = self.model.inference_batch_layer(data_inference, subgraph_loader)

@@ -87,7 +87,9 @@ def generate(data, prediction, clf):
         gc_edges = edges[mask]
         try:
             labels=graph_cut(labels,prediction[data.infinite == 0],gc_edges,clf)
-        except:
+        except Exception as e:
+            print('\n')
+            print(e)
             print("WARNING: Graph cut for {} didn't work. Using raw predictions for mesh generation.".format(data.filename))
 
     # add a last cell as the infinite cell

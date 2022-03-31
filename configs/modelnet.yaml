@@ -27,9 +27,9 @@ inference:
 validation:
   dataset: ModelNet10
   classes: null
-  shapes_per_conf_per_class: 10
+  shapes_per_conf_per_class: 2
   scan_confs: [42]
-  batch_size: 0
+  batch_size: 16
   per_layer: 1
   graph_cut: true
   fix_orientation: true
@@ -38,7 +38,7 @@ training:
   dataset: ModelNet10
   classes: null
   data_percentage: 0.95
-  shapes_per_conf_per_class: 1000
+  shapes_per_conf_per_class: 4
   scan_confs: [42]
   files: null
   batch_size: 1024
@@ -63,18 +63,17 @@ time:
   start: ""
   end: ""
 paths:
-  data: /mnt/raphael/
+  data: /mnt/raphael/ModelNet10
   out: /mnt/raphael/ModelNet10_out/dgnn/scan42/
   train_split: train
   val_split: test
   test_split: test
 regularization:
-  cell_reg_type: vol
-  reg_weight: 0.4
-  reg_type: null
-  reg_epoch: null
-  shape_weight_batch_normalization: 1
-  inside_outside_weight: [1.0 1.0]
+  cell_type: vol
+  cell_norm: null # [null, sqrt, log]
+  edge_type: null # edge regularization
+  edge_epoch: null # edge regularization
+  edge_weight: 0.4 # edge regularization
 graph_cut:
   unary_weight: 10
   unary_type: logits
