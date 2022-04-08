@@ -433,6 +433,11 @@ class dataLoader:
 
     def readAdjacencies_bin(self):
 
+        ### this doesn't work because the order of the edge_features does not correspond to
+        ### the order of nfacets
+        # temp = np.load(self.basefilename+"_3dt.npz")
+        # self.edge_lists = torch.from_numpy(np.vstack((temp["nfacets"],temp["nfacets"]))).type(torch.LongTensor)
+        
         temp = np.load(self.basefilename+"_adjacencies.npz")
         self.edge_lists = torch.from_numpy(temp["adjacencies"]).type(torch.LongTensor)
         self.edge_lists = torch.transpose(self.edge_lists,1,0)
