@@ -350,9 +350,9 @@ class Trainer():
 
                         if("chamfer" in clf.validation.metrics or "iou" in clf.validation.metrics):
                             mesh, eval_dict=gm.generate(d, prediction, clf)
-                            if(i%clf.validation.shapes_per_conf_per_class == 0):
-                                # my_loader.exportScore(prediction)
-                                mesh.export(os.path.join(clf.paths.out,"generation",d["filename"]+".ply"))
+                            # if(i%clf.validation.shapes_per_conf_per_class == 0):
+                            #     # my_loader.exportScore(prediction)
+                            mesh.export(os.path.join(clf.paths.out,"generation",d["category"]+"_"+d["filename"]+".ply"))
                             current_metric+=eval_dict[clf.temp.metrics[0]]
                             # export one shape per class
 

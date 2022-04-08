@@ -48,7 +48,7 @@ training:
   adjust_lr_every: 15
   load_epoch: 0
   print_every: 100
-  val_every: 1000
+  val_every: 100
   export_every: 50000
 model:
   type: sage

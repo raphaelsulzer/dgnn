@@ -4,14 +4,14 @@ from scipy.spatial import Delaunay
 import seaborn as sns
 from matplotlib.colors import ListedColormap
 import os
+import imageio
 
 path = "/home/adminlocal/PhD/python/dgnn/presentation/toy"
 
-# flatui = ['#d4efdf', "#3498db", "#95a5a6", "#e74c3c", "#34495e", '#fab0e4', '#52be80']
-# flatui = ['#d4efdf', '#ff0000', '#52be80']
-flatui = ['#d4efdf', '#52be80']
-my_cmap = ListedColormap(sns.color_palette(flatui).as_hex())
-
+font = {'family': 'serif',
+        'weight': 'semibold',
+        'size': 16,
+        }
 
 def function(x,noise=0):
 
@@ -55,11 +55,11 @@ def plot_points(px,i,scatter=False):
         py.append(function(x, 1))
     if(scatter):
         plt.scatter(px, py, color='r', marker='o',s=180,zorder=10)
-        plt.savefig(os.path.join(path,"points","scatter.png"))
+        plt.savefig(os.path.join(path,"points","points.png"))
         plt.close(fig)
     else:
         plt.plot(px, py, color='r', marker='o', markersize=13, linewidth=4.5)
-        plt.savefig("/home/adminlocal/PhD/cpp/surfaceReconstruction/presentation/points/"+str(i)+".png")
+        plt.savefig(path,"points","points_"+str(i)+".png")
         plt.close(fig)
 
 def plot_points_with_noise(px,nx,ny):
@@ -83,7 +83,7 @@ def plot_points_with_noise(px,nx,ny):
         py.append(function(x, 1))
     plt.scatter(px, py, color='r', marker='o', s=180, zorder=10)
 
-    plt.savefig("/home/adminlocal/PhD/cpp/surfaceReconstruction/presentation/points/noise.png")
+    plt.savefig(path,"points","noise.png")
     plt.close(fig)
 
 def plot_los(cx, cy, px, py):
@@ -105,7 +105,7 @@ def plot_rays(cx,cy,px,py):
     plt.plot(rx, ry, color='g', linewidth=2)
 
 
-def plot_visibility(px,py):
+def plot_visibility(px,py,sensors=True,los=False,rays=False):
     ### cameras
     c1x = -1.6
     c1y = 1.85
@@ -115,30 +115,35 @@ def plot_visibility(px,py):
     c2y = 1.85
     plt.plot(c2x, c2y, color='g', marker=(3, 0, 0), markersize=25)
 
+    if(sensors):
+        text = plt.text(-1.18, 2.0, "SENSORS", c='g', fontdict=font)
+        plt.savefig(os.path.join(path,"points","sensors.png"))
+        text.remove()
+
     ### visibility
-    plot_los(c1x, c1y, px[2], py[2])
-    plot_los(c1x, c1y, px[3], py[3])
-    plot_los(c1x, c1y, px[4], py[4])
-    plot_los(c2x, c2y, px[5], py[5])
-    plot_los(c2x, c2y, px[6], py[6])
-    plot_los(c2x, c2y, px[7], py[7])
-    plot_los(c2x, c2y, px[8], py[8])
+    if (los):
+        plot_los(c1x, c1y, px[2], py[2])
+        plot_los(c1x, c1y, px[3], py[3])
+        plot_los(c1x, c1y, px[4], py[4])
+        plot_los(c2x, c2y, px[5], py[5])
+        plot_los(c2x, c2y, px[6], py[6])
+        plot_los(c2x, c2y, px[7], py[7])
+        plot_los(c2x, c2y, px[8], py[8])
+        # plot_los(c1x, c1y, px[11], py[11])
 
-    # plot_los(c1x, c1y, px[11], py[11])
+        plt.savefig(os.path.join(path,"points","los.png"))
 
-    plt.savefig("/home/adminlocal/PhD/cpp/surfaceReconstruction/presentation/los.png")
+    if(rays):
+        plot_rays(c1x, c1y, px[2], py[2])
+        plot_rays(c1x, c1y, px[3], py[3])
+        plot_rays(c1x, c1y, px[4], py[4])
+        plot_rays(c2x, c2y, px[5], py[5])
+        plot_rays(c2x, c2y, px[6], py[6])
+        plot_rays(c2x, c2y, px[7], py[7])
+        plot_rays(c2x, c2y, px[8], py[8])
+        # plot_rays(c1x, c1y, px[11], py[11])
 
-    plot_rays(c1x, c1y, px[2], py[2])
-    plot_rays(c1x, c1y, px[3], py[3])
-    plot_rays(c1x, c1y, px[4], py[4])
-    plot_rays(c2x, c2y, px[5], py[5])
-    plot_rays(c2x, c2y, px[6], py[6])
-    plot_rays(c2x, c2y, px[7], py[7])
-    plot_rays(c2x, c2y, px[8], py[8])
-
-    # plot_rays(c1x, c1y, px[11], py[11])
-
-    plt.savefig("/home/adminlocal/PhD/cpp/surfaceReconstruction/presentation/rays.png")
+        plt.savefig(os.path.join(path,"points","rays.png"))
 
 
 ### real surface
@@ -229,17 +234,23 @@ for x in px:
 # py.append(0.2)
 # px.append(-2.15)
 # py.append(-0.2)
-px.append(0)
-py.append(0.5)
+# px.append(0)
+# py.append(0.5)
 
 
 points=np.stack((px,py),axis=1)
 plt.scatter(px, py, color='r', marker='o',s=180,zorder=10)
-# plt.grid()
-plt.savefig("/home/adminlocal/PhD/cpp/surfaceReconstruction/presentation/points/scatter.png")
+# plt.text(-0.9,0.5,"POINTS",c='r',fontdict=font)
+text = plt.text(-2.6,0.8,"POINTS",c='r',fontdict=font)
+plt.savefig(os.path.join(path,"points","points.png"))
+text.remove()
+
+# surf = plt.plot(px, py, color='r', marker='o', markersize=10, linewidth=3)
+# text = plt.text(-2.6,0.8,"SURFACE",c='r',fontdict=font)
+# plt.savefig(os.path.join(path,"points","surface.png"))
+
 # px.pop(6)
 # py.pop(6)
-# plt.plot(px, py, color='r', marker='o', markersize=10, linewidth=3)
 
 # add noise
 
@@ -254,7 +265,7 @@ plt.savefig("/home/adminlocal/PhD/cpp/surfaceReconstruction/presentation/points/
 
 ### visibility
 
-# plot_visibility(px,py)
+plot_visibility(px,py,sensors=True,los=False,rays=False)
 
 
 ### delaunay
@@ -270,25 +281,48 @@ for i,c in enumerate(centers):
         fcolors.append(0)
 fcolors=np.array(fcolors)
 
+out = ['#d4efdf', '#ffffff']
+out_cmap = ListedColormap(sns.color_palette(out).as_hex())
 
 
-
+in_out = ['#d4efdf', '#52be80']
+in_out_cmap = ListedColormap(sns.color_palette(in_out).as_hex())
 
 plt.triplot(points[:,0], points[:,1], tri.simplices.copy(), color='0.75', linewidth=2)
-plt.savefig("/home/adminlocal/PhD/cpp/surfaceReconstruction/presentation/delaunay.png")
+text = plt.text(-2.6,0.8,"3DT",c='0.75',fontdict=font)
+plt.savefig(os.path.join(path,"delaunay","delaunay.png"))
+text.remove()
 #
-plt.tripcolor(points[:,0], points[:,1], tri.simplices.copy(), facecolors=fcolors, edgecolors='k', linewidth=2, cmap=my_cmap)
-plt.savefig("/home/adminlocal/PhD/cpp/surfaceReconstruction/presentation/delaunay_colored.png")
+plt.tripcolor(points[:,0], points[:,1], tri.simplices.copy(), facecolors=fcolors, edgecolors='k', linewidth=2, cmap=out_cmap)
+plot_visibility(px,py,sensors=False,los=True)
+plt.savefig(os.path.join(path,"delaunay","delaunay_colored0.png"))
+
+plt.tripcolor(points[:,0], points[:,1], tri.simplices.copy(), facecolors=fcolors, edgecolors='k', linewidth=2, cmap=in_out_cmap)
+plot_visibility(px,py,sensors=False,los=True,rays=True)
+plt.savefig(os.path.join(path,"delaunay","delaunay_colored1.png"))
+
 #
 plt.plot(px[:-1], py[:-1], color='r', marker='o', markersize=10, linewidth=3)
-plt.savefig("/home/adminlocal/PhD/cpp/surfaceReconstruction/presentation/delaunay_interface.png")
+plt.savefig(os.path.join(path,"delaunay","delaunay_interface.png"))
 
 # plt.scatter(centers[:,0], centers[:,1], marker='o', s=50)
 
-plt.show(block=True)
+# plt.show(block=True)
 
+# make gif:
 
+images = []
+images.append(imageio.imread(os.path.join(path, "points", "points.png")))
+images.append(imageio.imread(os.path.join(path, "points", "sensors.png")))
+# images.append(imageio.imread(os.path.join(path,"points","los.png")))
+# images.append(imageio.imread(os.path.join(path,"points","rays.png")))
+images.append(imageio.imread(os.path.join(path, "delaunay", "delaunay.png")))
+images.append(imageio.imread(os.path.join(path, "delaunay", "delaunay_colored0.png")))
+images.append(imageio.imread(os.path.join(path, "delaunay", "delaunay_colored1.png")))
+images.append(imageio.imread(os.path.join(path, "delaunay", "delaunay_interface.png")))
+images.append(imageio.imread(os.path.join(path, "points", "surface.png")))
 
+imageio.mimsave(os.path.join(path, "delaunay.gif"), images, duration=3)
 
 
 a = 5
