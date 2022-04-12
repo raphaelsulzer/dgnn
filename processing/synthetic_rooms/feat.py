@@ -10,7 +10,7 @@ def feat(path,f):
     # extract features from mpu
     command = [mesh_tools,
                "-w", wdir,
-               "-i", "scan",
+               "-i", "scan/9",
                "-o", f,
                "-g", "mesh.off",
                "--gtype", "srd",

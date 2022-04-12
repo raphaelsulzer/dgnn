@@ -195,12 +195,13 @@ def getDataset(clf,dataset,mode):
             clf.training.files = []
             for c in clf.training.classes:
                 for s in clf.training.scan_confs:
-                    models = np.loadtxt(os.path.join(clf.training.path,c, "train.lst"), dtype=str)[:clf.training.shapes_per_conf_per_class]
+                    models = np.loadtxt(os.path.join(clf.training.path,c, "train.lst"), dtype=str)
                     for m in models:
-                        if os.path.exists(os.path.join(clf.training.path, c, m, "gt")):
+                        if os.path.exists(os.path.join(clf.training.path, c, m, "dgnn")):
                             d = {"path": os.path.join(clf.training.path,c,m), "filename": m, "category": c, "id": m, "scan_conf": str(s),
-                                 "gtfile":os.path.join("gt",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
+                                 "gtfile":os.path.join("dgnn",m), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
                             clf.training.files.append(d)
+                    clf.training.files = clf.training.files[:clf.training.shapes_per_conf_per_class]
 
         elif(mode == "validation"):
 
@@ -208,35 +209,26 @@ def getDataset(clf,dataset,mode):
             clf.validation.files = []
             for c in clf.validation.classes:
                 for s in clf.validation.scan_confs:
-                    models = np.loadtxt(os.path.join(clf.validation.path,c, "val.lst"), dtype=str)[:clf.validation.shapes_per_conf_per_class]
+                    models = np.loadtxt(os.path.join(clf.validation.path,c, "val.lst"), dtype=str)
                     for m in models:
-                        if os.path.exists(os.path.join(clf.validation.path, c, m, "gt")):
+                        if os.path.exists(os.path.join(clf.validation.path, c, m, "dgnn")):
                             d = {"path": os.path.join(clf.validation.path, c, m), "filename": m, "category": c, "id": m,"scan_conf": str(s),
-                                 "gtfile":os.path.join("gt",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
+                                 "gtfile":os.path.join("dgnn",m), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
                             clf.validation.files.append(d)
+                    clf.validation.files = clf.validation.files[:clf.validation.shapes_per_conf_per_class]
 
         elif(mode == "inference"):
             clf.inference.path, clf.inference.classes, clf.inference.scan_confs = getConfig(clf,clf.inference)
-            temp = []
-            if(clf.inference.files is not None):
-                for f in clf.inference.files:
-                    for s in clf.data.scan_confs:
-                        n = f.split('_')
-                        temp.append({"path": os.path.join(clf.inference.path,n[0]), "filename": n[0]+"_"+n[1],
-                                     "category":n[0],"id":n[1], "scan_conf":str(s),
-                                     "gtfile":os.path.join("gt",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")})
-                    clf.inference.files = temp
-                return
-            else:
-                clf.inference.files = []
-                for c in clf.inference.classes:
-                    for s in clf.data.scan_confs:
-                        models = np.loadtxt(os.path.join(clf.inference.path, c, m, "test.lst"), dtype=str)[:clf.inference.shapes_per_conf_per_class]
-                        for m in models:
-                            if os.path.exists(os.path.join(clf.inference.path,c,"gt")):
-                                d = {"path": os.path.join(clf.inference.path, c, m), "filename": m, "category": c,"id": m,
-                                     "scan_conf": str(s), "gtfile":os.path.join("gt",str(s)), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
-                                clf.inference.files.append(d)
+            clf.inference.files = []
+            for c in clf.inference.classes:
+                for s in clf.data.scan_confs:
+                    models = np.loadtxt(os.path.join(clf.inference.path, c, m, "test.lst"), dtype=str)
+                    for m in models:
+                        if os.path.exists(os.path.join(clf.inference.path,c,"dgnn")):
+                            d = {"path": os.path.join(clf.inference.path, c, m), "filename": m, "category": c,"id": m,
+                                 "scan_conf": str(s), "gtfile":os.path.join("dgnn",m), "ioufile":os.path.join("points_iou","points_iou_00.npz")}
+                            clf.inference.files.append(d)
+                    clf.inference.files = clf.inference.files[:clf.inference.shapes_per_conf_per_class]
         else:
             print("ERROR: not a valid method for getDataset.py")
             sys.exit(1)

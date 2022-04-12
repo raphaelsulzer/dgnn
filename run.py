@@ -37,14 +37,14 @@ def training(clf):
     print("Load {} graph(s) for training:".format(len(clf.training.files)))
     for mesh in tqdm(clf.training.files, ncols=50):
         # print("\t-",graph.split("/")[-1])
-        # try:
-        my_loader.run(mesh)
-        all_graphs.append(Data(x=my_loader.features, y=my_loader.gt, infinite=my_loader.infinite,
-                 edge_index=my_loader.edge_lists, edge_attr=my_loader.edge_features, pos=None))
-        # except Exception as e:
-        #     print('\n')
-        #     print(e)
-        #     print("WARNING: Couldn't load object ",mesh)
+        try:
+            my_loader.run(mesh)
+            all_graphs.append(Data(x=my_loader.features, y=my_loader.gt, infinite=my_loader.infinite,
+                     edge_index=my_loader.edge_lists, edge_attr=my_loader.edge_features, pos=None))
+        except Exception as e:
+            print('\n')
+            print(e)
+            print("WARNING: Couldn't load object ",mesh)
 
 
     print("\nLoaded graphs:")
