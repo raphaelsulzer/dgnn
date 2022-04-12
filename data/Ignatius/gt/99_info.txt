@@ -1,3 +1,0 @@
-vertices 9993
-facets 134034
-cells 67017

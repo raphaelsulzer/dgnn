@@ -1,12 +1,9 @@
 import subprocess, os
 
-mesh_tools = "/home/adminlocal/PhD/cpp/mesh-tools/build/debug/feat"
+mesh_tools = "/home/adminlocal/PhD/cpp/mesh-tools/build/release/feat"
+mesh_tools = "/linkhome/rech/genlgm01/uku93eu/code/feat"
 
 def feat(path,f):
-
-    # outfile = os.path.join(args.wdir,"dgnn",args.overwrite):
-    #     print("exists!")
-    #     return
 
     wdir = os.path.join(path,f)
 
@@ -17,7 +14,7 @@ def feat(path,f):
                "-o", f,
                "-g", "mesh.off",
                "--gtype", "srd",
-               "--pcp", "10",
+               "--pcp", "100",
                "-s", "npz",
                '-e', ""]
     print("\nrun: ", *command)
@@ -29,7 +26,7 @@ if __name__ == "__main__":
 
     path = "/home/adminlocal/PhD/data/synthetic_room"
     files = os.listdir(path)
-    files = ["00000007"]
+    # files = ["00000007"]
     for f in files:
         try:
             feat(path,f)

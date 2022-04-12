@@ -5,11 +5,11 @@ sys.path.append(os.path.join(os.path.dirname(__file__),'..','..', 'utils'))
 from libmesh import check_mesh_contains
 import datetime
 import copy
-import open3d as o3d
+# import open3d as o3d
 
 scan_conf = 9
 
-export_sensors = 1
+export_sensors = 0
 export_ply = 1
 export_npz = 1
 
@@ -96,27 +96,29 @@ def scan(path,model):
     # add outliers
     points = addOutliers(mesh, points,settings)
 
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(points)
-    pcd.estimate_normals()
-    normals = np.array(pcd.normals)
-
-    # export PLY
-    if(export_ply):
-        # pcd.normals = o3d.utility.Vector3dVector(cams-points)
-        o3d.io.write_point_cloud(os.path.join(path,model,"scan.ply"), pcd)
+    # pcd = o3d.geometry.PointCloud()
+    # pcd.points = o3d.utility.Vector3dVector(points)
+    # pcd.estimate_normals()
+    # normals = np.array(pcd.normals)
+    #
+    # # export PLY
+    # if(export_ply):
+    #     # pcd.normals = o3d.utility.Vector3dVector(cams-points)
+    #     o3d.io.write_point_cloud(os.path.join(path,model,"scan.ply"), pcd)
 
 
     # export NPZ
     if(export_npz):
-        np.savez(os.path.join(path,model,"scan.npz"),
+        np.savez(os.path.join(path,model,"scan","9.npz"),
                  points=points,
-                 normals=normals,
+                 normals=gt_normals,
                  gt_normals=gt_normals,
                  sensor_position=cams,
                  n_cameras=np.array(settings["n_cameras"],dtype=np.float64),
                  std_noise=np.array(settings["n_noise"],dtype=np.float64),
                  p_outliers=np.array(settings["n_outliers"],dtype=np.float64))
+
+
 
     print("Scanning Time (s): ",datetime.datetime.now() - start)
 
