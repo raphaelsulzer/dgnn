@@ -87,6 +87,12 @@ def generate(data, prediction, clf):
     if closed:
         # forcing infinite cells to be outside
         labels[mdata["inf_tetrahedra"].astype(bool)] = 1
+    # # add a last cell as the infinite cell
+    # edges[(edges[:,0] == -1).astype(bool),0] = labels.shape[0]
+    # edges[(edges[:,1] == -1).astype(bool),1] = labels.shape[0]
+    #
+    # # make it an outside cell
+    # labels=np.append(labels, 1)
 
     # get index of interface facets (i.e. where labels are not equal)
     interfaces = np.argwhere(labels[edges[:,0]]!=labels[edges[:,1]])
