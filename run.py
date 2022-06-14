@@ -1,20 +1,18 @@
-import sys, os, argparse, datetime, copy
+import sys, os, argparse, datetime
 from shutil import copyfile
 import pandas as pd
-import gc
-import numpy as np
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'learning'))
-import surfaceNetEdgePrediction as epsage
-import surfaceNetStaticEdgeFilters as efsage
-
 import runModel as rm
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'processing'))
 from dataset import reduceDataset, getDataset
 import generate_mesh as gm
+import data as io
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'utils'))
 from log import Logger
-import data as io
+from runUtils import prepareSample, createModel, createResultsDF
 
 from tqdm import tqdm
 from munch import *
@@ -31,7 +29,7 @@ def training(clf):
     ####################################################################################################################
     ########################################## load train data #########################################################
     ####################################################################################################################
-    all_graphs = [];
+    all_graphs = []
     my_loader = io.dataLoader(clf)
 
     print("Load {} graph(s) for training:".format(len(clf.training.files)))
@@ -42,11 +40,12 @@ def training(clf):
             all_graphs.append(Data(x=my_loader.features, y=my_loader.gt, infinite=my_loader.infinite,
                      edge_index=my_loader.edge_lists, edge_attr=my_loader.edge_features, pos=None))
         except Exception as e:
+            # raise
             print('\n')
             print(e)
             print("WARNING: Couldn't load object ",mesh)
 
-
+    assert(len(all_graphs)>0)
     print("\nLoaded graphs:")
     num_nodes = my_loader.getInfo()
     num_train_nodes = int(num_nodes * clf.training.data_percentage)
@@ -62,7 +61,6 @@ def training(clf):
     data.train = Munch()
     data.train.all = next(iter(temp_loader))
     del temp_loader
-    gc.collect()
 
     print("\nSample neighborhoods with:\n\t-clique size {}\n\t-{}+{} hop(s)\n\t-batch size {}\n\t-self loops {}"\
           .format(clf.graph.clique_sizes, clf.graph.num_hops, clf.graph.additional_num_hops, clf.training.batch_size, clf.graph.self_loops))
@@ -83,16 +81,14 @@ def training(clf):
     data.validation = Munch()
     data.validation.all = []
     data.validation.batches = []
-    if(clf.validation.files is not None):
-        data.validation_names = clf.validation.files
-        clf.temp.batch_size = clf.validation.batch_size
-        clf.temp.per_layer = clf.validation.per_layer
-        print("\nLoad {} graph(s) for testing:".format(len(data.validation_names)))
-        for file in tqdm(clf.validation.files, ncols=50):
-            # print("\t-", file)
-            _,d,subgraph_sampler = prepareSample(clf, file)
-            data.validation.all.append(d)
-            data.validation.batches.append(subgraph_sampler)
+    data.validation_names = clf.validation.files
+    clf.temp.batch_size = clf.validation.batch_size
+    clf.temp.per_layer = clf.validation.per_layer
+    print("\nLoad {} graph(s) for testing:".format(len(data.validation_names)))
+    for file in tqdm(clf.validation.files, ncols=50):
+        _,d,subgraph_sampler = prepareSample(clf, file)
+        data.validation.all.append(d)
+        data.validation.batches.append(subgraph_sampler)
 
     ##############################
     ### create (or load) and (re)train model ###
@@ -104,12 +100,14 @@ def training(clf):
 
     if(clf.training.load_epoch):
         # load model
-        model_file = os.path.join(clf.paths.out,"models", "model_" + clf.training.load_epoch + ".ptm")
-        print("\nLoad existing model at epoch ",clf.training.load_epoch)
+        model_file = os.path.join(clf.paths.out,"models", "model_" + str(clf.training.load_epoch) + ".ptm")
+        print("\nLoad existing model at epoch ",str(clf.training.load_epoch))
         # # load old results df TODO: need to load it from the args.conf directory, not from the clf.files.config file!
-        # clf.results_df = pd.read_csv(clf.files.results)
-        # res = clf.results_df.loc[clf.results_df['epoch'] == clf.training.load_epoch]
-        # print(res)
+        clf.results_df = pd.read_csv(os.path.join(clf.paths.out,"metrics", "results_" + str(clf.training.load_epoch) + ".csv"))
+        res = clf.results_df.loc[clf.results_df['epoch'] == clf.training.load_epoch]
+        print(res.iloc[-1,:])
+        clf.best_metric = res["test_best_"+clf.validation.metrics[0]].iloc[-1]
+        clf.temp.load_iteration = res["iteration"].iloc[-1]
         if (not os.path.isfile(model_file)):
             print("\nERROR: The model {} does not exist. Check that you have set the correct path in data:out in the config file!".format(model_file))
             sys.exit(1)
@@ -164,112 +162,49 @@ def inference(clf):
     ############################################
     ######### Reconstruct and evaluate #########
     ############################################
-    results_dict = {}
-    df = pd.DataFrame(index=clf.inference.scan_confs, columns=clf.inference.classes)
-    df.index.name = "scan_conf"
-    results_dict['loss'] = df.copy()
-    # results_dict['count'] = df.copy()
-    for key in clf.temp.metrics:
-        results_dict[key] = df.copy()
+    results = []
+
     for clf.temp.inference_file in tqdm(clf.inference.files, ncols=50):
 
         ###############################
         ########## load data ##########
         ###############################
-        # try:
-        loader, data, subgraph_sampler = prepareSample(clf, clf.temp.inference_file)
-        loader.getInfo()
-        row = data['scan_conf'] if data['scan_conf'] else str(0)
+        try:
+            loader, data, subgraph_sampler = prepareSample(clf, clf.temp.inference_file)
+            loader.getInfo()
 
-        prediction = trainer.inference(data, subgraph_sampler, clf)
-        if clf.inference.has_label:
-            results_dict["loss"].loc[int(row), data["category"]] = clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum
-        if("prediction" in clf.inference.export):
-            loader.exportScore(prediction)
-        if("mesh" in clf.inference.export):
+            prediction = trainer.inference(data, subgraph_sampler, clf)
+
+            res = {"scan_conf":data["scan_conf"],"class":data["category"],"id":data["id"]}
+
+            if clf.inference.has_label:
+                res["loss"] = clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum
+            if("prediction" in clf.inference.export):
+                loader.exportScore(prediction)
             mesh, eval_dict = gm.generate(data, prediction, clf)
-            for key,value in eval_dict.items():
-                results_dict[key].loc[int(row), data["category"]] = value
+            for key, value in eval_dict.items():
+                res[key] = value
+            if("mesh" in clf.inference.export):
+                # export one shape per class
+                outpath = os.path.join(clf.paths.out, clf.paths.generation, data["category"])
+                os.makedirs(outpath,exist_ok=True)
+                mesh.export(os.path.join(outpath, data["id"]+".ply"))
 
-            # export one shape per class
-            mesh.export(os.path.join(clf.paths.out, "generation", data["filename"]+".ply"))
+            results.append(res)
+        except Exception as e:
+            print(e)
+            print("Skipping {}".format(clf.temp.inference_file))
 
-    for key, value in results_dict.items():
-        value["mean"] = value.mean(numeric_only=False, axis=1)
-        print("{}\n{}\n".format(key,value))
-
-
-
-
-def prepareSample(clf, file):
-    """this function only supports loading one sampler per graph (as used for testing and inference)
-    but not yet loading one sampler for multiple graphs (as used in training)"""
-
-    verbosity=0
-    if(verbosity):
-        print("Load data:")
-    my_loader = io.dataLoader(clf,verbosity=verbosity)
-    my_loader.run(file)
-
-
-    torch_dataset = Data(x=my_loader.features, y=my_loader.gt, infinite=my_loader.infinite, edge_index=my_loader.edge_lists,
-                   edge_attr=my_loader.edge_features, path=my_loader.path, gtfile=my_loader.gtfile, ioufile=my_loader.ioufile,
-                    filename= my_loader.filename, category=my_loader.category, id=my_loader.id, scan_conf=my_loader.scan_conf)
-
-    if(not clf.model.edge_convs and clf.graph.self_loops):
-        torch_dataset.edge_index = add_self_loops(torch_dataset.edge_index)[0]
-
-
-    start = datetime.datetime.now()
-    ### shuffle has to be False, otherwise inference_layer_batch does not work correctly
-    if(clf.temp.batch_size):
-        batch_loader = NeighborSampler(edge_index=torch_dataset.edge_index, sizes=clf.temp.clique_size,
-                                       batch_size=clf.temp.batch_size, shuffle=False, drop_last=False, return_e_id=clf.model.edge_convs)
-    else:
-        batch_loader = []
-    stop = datetime.datetime.now()
-    # clf.temp.subgraph_time += ((stop - start).seconds)
-
-    return my_loader, torch_dataset, batch_loader
+    res_df = pd.DataFrame(results)
+    res_df_class = res_df.groupby(by=['class']).mean()
+    res_df_class.loc['mean'] = res_df.mean()
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_rows', None)
+    print(res_df_class)
 
 
 
 
-
-def createModel(clf):
-
-    if (clf.model.type == "sage" and clf.model.edge_prediction):
-        model = epsage.SurfaceNet(clf=clf)
-    # elif(clf.model.type == "sage" and not clf.model.edge_prediction and clf.model.edge_convs):
-    elif(clf.model.type == "sage" and not clf.model.edge_prediction):
-        model = efsage.SurfaceNet(clf=clf)  # this works with and without edge features
-    # elif (clf.model.type == "sage" and clf.model.edge_convs):
-    #     if (clf.model.concatenate):
-    #         model = cefsage.SurfaceNet(n_node_features=fs, clf=clf)
-    #     else:
-    #         model = efsage.SurfaceNet(n_node_features=fs, clf=clf)
-    # elif(clf.model.type == "sage" and not clf.model.edge_prediction and not clf.model.edge_convs):
-    #     model = sage.SurfaceNet(clf=clf)
-    else:
-        print("\nERROR: {} is not a valid model_name".format(clf.model.type))
-        sys.exit(1)
-
-    return model
-
-def createResultsDF(clf):
-    # create the results df
-    cols = ['iteration', 'epoch',
-               'train_loss_cell', 'train_loss_reg', 'train_loss_total', 'train_OA',
-               'test_loss_cell', 'test_loss_reg', 'test_loss_total', 'test_OA',
-                'test_current_'+clf.validation.metrics[0], 'test_best_'+clf.validation.metrics[0]]
-    clf.results_df = pd.DataFrame(columns=cols)
-    if(clf.validation.metrics[0] == "loss" or clf.validation.metrics[0] == "chamfer"):
-        clf.best_metric = 100000
-    elif(clf.validation.metrics[0] == "iou" or clf.validation.metrics[0] == "oa"):
-        clf.best_metric = 0
-    else:
-        print("ERROR: {} is not a valid validation metric. Choose either loss, chamfer or iou.".format(clf.validation.metric))
-        sys.exit(1)
 
 
 
@@ -294,7 +229,6 @@ if __name__ == "__main__":
     ################# load conf #################
     clf = Munch.fromYAML(open(args.conf, 'r'))
 
-
     clf.temp = Munch()
     clf.data = Munch()
     clf.files = Munch()
@@ -307,8 +241,8 @@ if __name__ == "__main__":
         clf.paths.data = os.path.join(os.path.dirname(__file__),clf.paths.data)
 
 
+
     ################# create the model dir #################
-    os.makedirs(os.path.join(clf.paths.out,"generation"), exist_ok=True)
     os.makedirs(os.path.join(clf.paths.out,"prediction"), exist_ok=True)
     os.makedirs(os.path.join(clf.paths.out,"metrics"), exist_ok=True)
     os.makedirs(os.path.join(clf.paths.out,"models"), exist_ok=True)
@@ -317,12 +251,9 @@ if __name__ == "__main__":
     clf.files.results = os.path.join(clf.paths.out,"metrics","results.csv")
 
 
-
-
     ################# print time before training/classification #################
     clf.temp.start = datetime.datetime.now()
     print(clf.temp.start)
-    # clf.time.start = str(clf.temp.start)
     print("READ CONFIG FROM ", args.conf)
     print("SAVE CONFIG TO ", clf.files.config)
 
@@ -351,10 +282,6 @@ if __name__ == "__main__":
         getDataset(clf, clf.inference.dataset, "inference")
         inference(clf)
 
-
-    # print("peak memory: ",max(clf.temp.memory))
-    # print("inference time in sec: ", clf.temp.inference_time)
-    # print("subgraph time in sec: ", clf.temp.subgraph_time)
 
     # print time after training/classification
     clf.temp.end = datetime.datetime.now()

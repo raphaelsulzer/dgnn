@@ -50,18 +50,20 @@ class dataLoader:
 
         if(self.verbosity):
             print("\t-{} nodes".format(self.n_nodes))
-            print("\t-{} node features:".format(fs))
-            if (self.clf.features.node_normalization_feature):
-                print("\t-", self.node_feature_names[1:])
-            else:
-                print("\t-", self.node_feature_names)
+            print("\t-{} node features".format(fs))
+            # print("\t-{} node features:".format(fs))
+            # if (self.clf.features.node_normalization_feature):
+            #     print("\t-", self.node_feature_names[1:])
+            # else:
+            #     print("\t-", self.node_feature_names)
 
             if (self.read_edge_features):
-                print("\t-{} edge features:".format(fse))
-                if (self.clf.features.edge_normalization_feature):
-                    print("\t-", self.edge_feature_names[1:])
-                else:
-                    print("\t-", self.edge_feature_names)
+                print("\t-{} edge features".format(fse))
+                # print("\t-{} edge features:".format(fse))
+                # if (self.clf.features.edge_normalization_feature):
+                #     print("\t-", self.edge_feature_names[1:])
+                # else:
+                #     print("\t-", self.edge_feature_names)
 
             if (self.clf.features.node_normalization_feature):
                 print("\t-shape weight feature for loss: ", self.node_feature_names[0])
@@ -81,7 +83,6 @@ class dataLoader:
     def run(self, d):
 
         self.path = d["path"]
-        self.filename = d["filename"]
         self.category = d["category"]
         self.id = d["id"]
         self.scan_conf = d["scan_conf"]
@@ -446,6 +447,7 @@ class dataLoader:
 
 
 
+
     def standardizeFeatures(self):
 
         if('sum' in self.clf.features.scaling):
@@ -525,12 +527,13 @@ class dataLoader:
 
     def exportScore(self, prediction):
 
-        outpath =  os.path.join(self.clf.paths.out,"prediction")
+        outpath =  os.path.join(self.clf.paths.out,"prediction",self.category)
+        os.makedirs(outpath,exist_ok=True)
         if(self.verbosity):
             print("Export predictions to: ", outpath)
 
         # export predictions
-        file = os.path.join(outpath,self.filename+".npz")
+        file = os.path.join(outpath,self.category,self.id+".npz")
         f = open(file, 'wb')
         np.savez(f,
                  number_of_cells=int(len(prediction)),

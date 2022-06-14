@@ -15,7 +15,7 @@ inference:
   classes: null
   shapes_per_conf_per_class: 100000
   files: null
-  scan_confs: [43]
+  scan_confs: [4]
   batch_size: 0
   per_layer: 1
   has_label: 1

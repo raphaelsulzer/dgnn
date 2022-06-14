@@ -102,20 +102,13 @@ def generate(data, prediction, clf):
     recon_mesh = trimesh.Trimesh(mdata["vertices"], mdata["facets"][interfaces], process=True)
     if(clf.temp.fix_orientation):
         trimesh.repair.fix_normals(recon_mesh)
-        # trimesh.repair.fix_inversion(recon_mesh)
-        # TODO: check to see if this shouldn't be rather trimesh.repair.fix_inversion (maybe it is faster)
 
     eval_dict = dict()
 
     ### watertight ###
     if("watertight" in clf.temp.metrics):
-        # TODO: this does not really give the correct result, as it seems to simply count boundary edges,
-        # which are also all non-manifold edges. Thus, if the mesh has any non-manifold edge, it will also be counted as non-watertight
-        # maybe use Open3D for this task instead, which has support for both, non-manifold and watertight.
-        # UPDATE: actually recon_mesh.as_open3d works
         eval_dict["watertight"] = int(recon_mesh.as_open3d.is_watertight())
-        # eval_dict["watertight"] = int(recon_mesh.is_watertight)
-        # print("WARNING: Mesh is not watertight: ", data['filename'])
+
 
     subfolder = data['id'] if data['id'] else data['category']
 
@@ -143,7 +136,7 @@ def generate(data, prediction, clf):
 
     ### Chamfer ###
     if('chamfer' in clf.temp.metrics):
-        points_file = os.path.join(data.path, "eval", subfolder, "pointcloud.npz")
+        points_file = os.path.join(data.path,data["ioufile"],"..","points.npz")
         points = np.load(points_file)
         gt_points = points["points"]
         gt_points = gt_points.astype(np.float32)
@@ -158,8 +151,6 @@ def generate(data, prediction, clf):
             print(e)
             print("WARNING: Could not calculate Chamfer distance for mesh ",data['filename'])
             eval_dict["iou"] = 0.0
-
-
 
     return recon_mesh, eval_dict
 

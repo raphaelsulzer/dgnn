@@ -299,9 +299,9 @@ class Trainer():
 
         # init metrics
         clf.training.metrics = Metrics()
-        iterations = 0
+        iterations = clf.temp.load_iteration
 
-        for current_epoch in range(1,clf.training.epochs+1):
+        for current_epoch in range(clf.training.load_epoch+1,clf.training.epochs+1):
             # adjust learning rate to current epoch
             clf.temp.current_epoch = current_epoch
             adjust_learning_rate(optimizer, clf)

@@ -11,11 +11,11 @@ graph:
   clique_sizes: [-1] # -1 meaning sample all existing nodes
   self_loops: 0
 inference:
-  dataset: ModelNet10
+  dataset: ShapeNet
   classes: null
-  shapes_per_conf_per_class: 100000
+  shapes_per_conf_per_class: 10
   files: null
-  scan_confs: [43]
+  scan_confs: [6]
   batch_size: 0
   per_layer: 1
   has_label: 1
@@ -63,21 +63,20 @@ time:
   start: ""
   end: ""
 paths:
-#  data: /linkhome/rech/genlgm01/uku93eu/scratch/ShapeNet
-#  out: /linkhome/rech/genlgm01/uku93eu/scratch/ShapeNet_out/dgnn/tr
-  data: /mnt/raphael/ModelNet10
-  out: /mnt/raphael/ModelNet10_out/benchmark/dgnn/tr
+  data: /mnt/raphael/ShapeNet
+  out: /mnt/raphael/ShapeNet_out/benchmark/dgnn/tr
   train_split: train
   val_split: val
-  test_split: test
+  test_split: test100
+  generation: shapenet10000_debug
 regularization:
   cell_type: vol
-  cell_norm: null # [null, sqrt, log]
+  cell_norm: sqrt # [null, sqrt, log]
   edge_type: null # edge regularization
   edge_epoch: null # edge regularization
   edge_weight: 0.4 # edge regularization
 graph_cut:
-  unary_weight: 10
+  unary_weight: 3
   unary_type: logits
-  binary_weight: 10
+  binary_weight: 3
   binary_type: beta

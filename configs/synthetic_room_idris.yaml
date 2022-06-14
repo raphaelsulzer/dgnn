@@ -32,22 +32,22 @@ validation:
   batch_size: 128
   per_layer: 1
   graph_cut: true
-  fix_orientation: false
+  fix_orientation: true
   metrics: [ "iou" ]
 training:
   dataset: synthetic_room_dataset
   classes: null
   scan_confs: [9]
   data_percentage: 0.9
-  shapes_per_conf_per_class: 5
+  shapes_per_conf_per_class: 100
   batch_size: 128
   epochs: 100
   loss: kl
   learning_rate: 0.005
   adjust_lr_every: 24
   load_epoch: 0
-  print_every: 100
-  val_every: 500
+  print_every: 5000
+  val_every: 25000
   export_every: 50000
 model:
   type: sage
