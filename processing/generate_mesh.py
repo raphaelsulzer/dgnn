@@ -1,5 +1,7 @@
 import argparse
 import os
+import time
+
 import numpy as np
 import pandas as pd
 import os, sys
@@ -60,6 +62,9 @@ def graph_cut(labels,prediction,edges,clf):
 
 def generate(data, prediction, clf):
 
+    t0 = time.time()
+    eval_dict = dict()
+
     """This function generates a mesh from cell predictions and evaluates the result using presampled points in (for IoU) and on the ground truth
     mesh (for chamfer).
     It returns the mesh (as trimesh object) and a dictionary with the evaluation metrics."""
@@ -103,7 +108,8 @@ def generate(data, prediction, clf):
     if(clf.temp.fix_orientation):
         trimesh.repair.fix_normals(recon_mesh)
 
-    eval_dict = dict()
+    eval_dict["time"] = time.time() - t0
+
 
     ### watertight ###
     if("watertight" in clf.temp.metrics):

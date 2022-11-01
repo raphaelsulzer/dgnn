@@ -20,33 +20,33 @@ inference:
   per_layer: 1
   has_label: 1
   model: best
-  graph_cut: 0
+  graph_cut: 1
   fix_orientation: 1
   export: [ "mesh" ]
   metrics: [ "iou" ]
 validation:
-  dataset: ShapeNet
+  dataset: ModelNet10
   classes: null
   shapes_per_conf_per_class: 10
-  scan_confs: [4]
+  scan_confs: [43]
   batch_size: 0
   per_layer: 1
   graph_cut: true
   fix_orientation: false
-  metrics: [ "loss" ]
+  metrics: [ "iou","loss" ]
 training:
-  dataset: ShapeNet
+  dataset: ModelNet10
   classes: null
   data_percentage: 1.0
-  shapes_per_conf_per_class: 1000
-  scan_confs: [4]
+  shapes_per_conf_per_class: 110
+  scan_confs: [43]
   files: null
   batch_size: 1024
   epochs: 101
   loss: kl
-  learning_rate: 0.0005
+  learning_rate: 0.005
   adjust_lr_every: 15
-  load_epoch: 9
+  load_epoch: 0
   print_every: 1000
   val_every: 10000
   export_every: 10000
@@ -64,13 +64,13 @@ time:
   end: ""
 paths:
   data: /mnt/raphael/ShapeNet
-  out: /mnt/raphael/ShapeNet_out/benchmark/dgnn/tr
+  out: /mnt/raphael/ModelNet10_out/dgnn/ablation/no_vol_reg
   train_split: train
-  val_split: val
+  val_split: test
   test_split: test100
-  generation: shapenet3000_no_gc
+  generation: shapenet
 regularization:
-  cell_type: vol
+  cell_type: null
   cell_norm: null # [null, sqrt, log]
   edge_type: null # edge regularization
   edge_epoch: null # edge regularization

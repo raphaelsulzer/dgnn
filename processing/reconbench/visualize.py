@@ -359,8 +359,7 @@ def dump(args):
     image_dir = os.path.join(args.user_dir, args.data_dir, "images", args.method, gco[0])
     if(len(method)>1):
         image_dir=os.path.join(args.user_dir,args.data_dir,"images",method[0], method[1], gco[0])
-    if(not os.path.exists(image_dir)):
-        os.makedirs(image_dir)
+    os.makedirs(image_dir,exist_ok=True)
     image_file = os.path.join(image_dir,args.scene_conf+".png")
     print("save to: ", image_file)
     vis.capture_screen_image(image_file, do_render=True)

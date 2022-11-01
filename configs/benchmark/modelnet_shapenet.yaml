@@ -64,7 +64,7 @@ time:
   end: ""
 paths:
   data: /mnt/raphael/ShapeNet
-  out: /mnt/raphael/ModelNet10_out/benchmark/dgnn/tr
+  out: /mnt/raphael/ModelNet10_out/benchmark/dgnn/tr2
   train_split: train
   val_split: val
   test_split: test100

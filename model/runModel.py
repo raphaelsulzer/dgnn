@@ -161,73 +161,71 @@ class Trainer():
 
 
     def calcLossAndOA(self, logits_cell, logits_edge, data, clf, metrics):
-
-
         ###############################################################
         ########################## cell loss ##########################
         ###############################################################
-        if (clf.regularization.cell_type):
+        # if (clf.regularization.cell_type):
 
-            if (clf.training.loss == "kl"):
-                # input is always expected in log-probabilities (hence log_softmax) while target is expected in probabilities
-                cell_loss = F.kl_div(F.log_softmax(logits_cell, dim=-1), data.batch_gt[:, :2].to(clf.temp.device), reduction='none')
-                cell_loss = torch.sum(cell_loss, dim=1)  # cf. formula for kl_div, summing over X (the dimensions)
-                # metrics.addOAItem(
-                #     torch.sum(data.batch_gt[:, 2] == F.log_softmax(logits_cell, dim=-1).argmax(1).cpu()).item(),
-                #     data.batch_x.shape[0])
-                metrics.addOAItem(
-                    torch.sum(data.batch_gt.argmax(dim=1) == F.log_softmax(logits_cell, dim=-1).argmax(dim=1).cpu()).item(),
-                    data.batch_x.shape[0])
-            elif(clf.training.loss == "bce"):
-                # supervise with graph cut label
-                cell_loss = F.binary_cross_entropy_with_logits(logits_cell.squeeze(dim=-1), data.batch_gt[:, 3].to(clf.temp.device), reduction='none')
-                metrics.addOAItem(
-                    torch.sum(data.batch_gt.argmax(dim=1) == torch.round(F.sigmoid(logits_cell.squeeze(dim=-1))).cpu()).item(),
-                    data.batch_x.shape[0])
-            elif (clf.training.loss == "mse"):
-                cell_loss = F.mse_loss(F.sigmoid(logits_cell).squeeze(), data.batch_gt[:, 0].to(clf.temp.device))
+        if (clf.training.loss == "kl"):
+            # input is always expected in log-probabilities (hence log_softmax) while target is expected in probabilities
+            cell_loss = F.kl_div(F.log_softmax(logits_cell, dim=-1), data.batch_gt[:, :2].to(clf.temp.device), reduction='none')
+            cell_loss = torch.sum(cell_loss, dim=1)  # cf. formula for kl_div, summing over X (the dimensions)
+            # metrics.addOAItem(
+            #     torch.sum(data.batch_gt[:, 2] == F.log_softmax(logits_cell, dim=-1).argmax(1).cpu()).item(),
+            #     data.batch_x.shape[0])
+            metrics.addOAItem(
+                torch.sum(data.batch_gt.argmax(dim=1) == F.log_softmax(logits_cell, dim=-1).argmax(dim=1).cpu()).item(),
+                data.batch_x.shape[0])
+        elif(clf.training.loss == "bce"):
+            # supervise with graph cut label
+            cell_loss = F.binary_cross_entropy_with_logits(logits_cell.squeeze(dim=-1), data.batch_gt[:, 3].to(clf.temp.device), reduction='none')
+            metrics.addOAItem(
+                torch.sum(data.batch_gt.argmax(dim=1) == torch.round(F.sigmoid(logits_cell.squeeze(dim=-1))).cpu()).item(),
+                data.batch_x.shape[0])
+        elif (clf.training.loss == "mse"):
+            cell_loss = F.mse_loss(F.sigmoid(logits_cell).squeeze(), data.batch_gt[:, 0].to(clf.temp.device))
+        else:
+            print("{} is not a valid loss. choose either kl or mse".format(clf.training.loss))
+            sys.exit(1)
+
+        if(clf.regularization.cell_norm == "log"):
+            shape_weight =  torch.log(1+data.batch_x[:, 0].to(clf.temp.device))
+        elif(clf.regularization.cell_norm == "sqrt"):
+            shape_weight = torch.sqrt(data.batch_x[:, 0].to(clf.temp.device))
+        else:
+            if(clf.regularization.cell_type):
+                shape_weight = data.batch_x[:, 0].to(clf.temp.device)
             else:
-                print("{} is not a valid loss. choose either kl or mse".format(clf.training.loss))
-                sys.exit(1)
+                shape_weight = torch.ones(size=cell_loss.shape).to(clf.temp.device)
 
-            if(clf.regularization.cell_norm == "log"):
-                shape_weight =  torch.log(1+data.batch_x[:, 0].to(clf.temp.device))
-            elif(clf.regularization.cell_norm == "sqrt"):
-                shape_weight = torch.sqrt(data.batch_x[:, 0].to(clf.temp.device))
-            else:
-                if(clf.regularization.cell_type):
-                    shape_weight = data.batch_x[:, 0].to(clf.temp.device)
-                else:
-                    shape_weight = torch.ones(size=cell_loss.shape)
+        cell_loss = cell_loss * shape_weight
 
+        # add loss to metrics for statistics
+        metrics.addCellLossItem(cell_loss.sum(),shape_weight.sum())
+        # only works if additional_hops > 0
 
-            cell_loss = cell_loss * shape_weight
+        cell_loss = cell_loss.sum() / shape_weight.sum()
 
-            # add loss to metrics for statistics
-            metrics.addCellLossItem(cell_loss.sum(),shape_weight.sum())
-            # only works if additional_hops > 0
-
-
-            cell_loss = cell_loss.sum() / shape_weight.sum()
-
-
-            # # final loss is mean over all batch entries
-            # if (clf.regularization.shape_weight_batch_normalization):
-            #     cell_loss = cell_loss.sum() / shape_weight.sum()
-            # else:
-            #     if (clf.regularization.inside_outside_weight[0] != clf.regularization.inside_outside_weight[1]):
-            #         io_weight = data_all.batch_gt[:, 1].to(clf.temp.device) * clf.regularization.inside_outside_weight[0] + \
-            #                     data_all.batch_gt[:, 2].to(clf.temp.device) * clf.regularization.inside_outside_weight[1]
-            #         cell_loss = cell_loss * io_weight
-            #         cell_loss = cell_loss.sum() / io_weight.sum()
-            #     else:
-            #         cell_loss = torch.mean(cell_loss)*10**6
+        # # final loss is mean over all batch entries
+        # if (clf.regularization.shape_weight_batch_normalization):
+        #     cell_loss = cell_loss.sum() / shape_weight.sum()
+        # else:
+        #     if (clf.regularization.inside_outside_weight[0] != clf.regularization.inside_outside_weight[1]):
+        #         io_weight = data_all.batch_gt[:, 1].to(clf.temp.device) * clf.regularization.inside_outside_weight[0] + \
+        #                     data_all.batch_gt[:, 2].to(clf.temp.device) * clf.regularization.inside_outside_weight[1]
+        #         cell_loss = cell_loss * io_weight
+        #         cell_loss = cell_loss.sum() / io_weight.sum()
+        #     else:
+        #         cell_loss = torch.mean(cell_loss)*10**6
         # else: # without any normalization of the loss:
-        #     cell_loss = F.kl_div(F.log_softmax(logits_cell, dim=-1), data_all.batch_gt[:, 1:].to(clf.temp.device), reduction='batchmean')
+        #     cell_loss = F.kl_div(F.log_softmax(logits_cell, dim=-1), data.batch_gt[:, :2].to(clf.temp.device),
+        #                          reduction='batchmean')
+        #     metrics.addCellLossItem(cell_loss.sum(),torch.zeros(1))
+
         loss = cell_loss
 
-        if ((loss != loss).any()):
-            print("NaN in loss")
+        # if ((loss != loss).any()):
+        #     print("NaN in loss")
 
 
 
@@ -352,7 +350,7 @@ class Trainer():
                             mesh, eval_dict=gm.generate(d, prediction, clf)
                             # if(i%clf.validation.shapes_per_conf_per_class == 0):
                             #     # my_loader.exportScore(prediction)
-                            mesh.export(os.path.join(clf.paths.out,"generation",d["category"]+"_"+d["filename"]+".ply"))
+                            mesh.export(os.path.join(clf.paths.out,"vis",d["category"]+"_"+d["id"]+".ply"))
                             current_metric+=eval_dict[clf.temp.metrics[0]]
                             # export one shape per class
 
@@ -403,8 +401,6 @@ class Trainer():
 
                     # backup results file
                     copyfile(clf.files.results, os.path.splitext(clf.files.results)[0]+"_"+str(current_epoch)+".csv")
-
-
 
     ######################################################
     ###################### INFERENCE #####################

@@ -106,7 +106,7 @@ def scanShape(args):
         command.append("random_sample_rotation")
         command.append(config.get("uniform", "random_sample_rotation"))
 
-    print(command)
+    print(*command)
     subprocess.check_call(command)
 
 

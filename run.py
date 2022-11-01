@@ -1,8 +1,9 @@
 import sys, os, argparse, datetime
+import time
 from shutil import copyfile
 import pandas as pd
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '', 'learning'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '', 'model'))
 import runModel as rm
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '', 'processing'))
@@ -164,16 +165,23 @@ def inference(clf):
     ############################################
     results = []
 
+    time_dict = {"subgraph":0,"decode":0,"mesh":0,"export":0}
+
     for clf.temp.inference_file in tqdm(clf.inference.files, ncols=50):
 
         ###############################
         ########## load data ##########
         ###############################
         try:
+
+            t0 = time.time()
             loader, data, subgraph_sampler = prepareSample(clf, clf.temp.inference_file)
             loader.getInfo()
+            time_dict["subgraph"]+=time.time()-t0
 
+            t0 = time.time()
             prediction = trainer.inference(data, subgraph_sampler, clf)
+            time_dict["decode"]+=time.time()-t0
 
             res = {"scan_conf":data["scan_conf"],"class":data["category"],"id":data["id"]}
 
@@ -182,18 +190,26 @@ def inference(clf):
             if("prediction" in clf.inference.export):
                 loader.exportScore(prediction)
             mesh, eval_dict = gm.generate(data, prediction, clf)
+            time_dict["mesh"]+=eval_dict["time"]
             for key, value in eval_dict.items():
                 res[key] = value
+            t0 = time.time()
             if("mesh" in clf.inference.export):
                 # export one shape per class
                 outpath = os.path.join(clf.paths.out, clf.paths.generation, data["category"])
                 os.makedirs(outpath,exist_ok=True)
                 mesh.export(os.path.join(outpath, data["id"]+".ply"))
-
+            time_dict["export"]+=time.time()-t0
             results.append(res)
         except Exception as e:
             print(e)
             print("Skipping {}".format(clf.temp.inference_file))
+
+    time_dict["total"]=time_dict["subgraph"]+time_dict["decode"]+time_dict["mesh"]+time_dict["export"]
+    time_df = pd.DataFrame(time_dict,index=["total"])
+    time_df = time_df.append(pd.DataFrame(time_dict,index=["mean"]))
+    time_df.iloc[-1] = time_df.iloc[-1] / len(clf.inference.files)
+    print(time_df)
 
     res_df = pd.DataFrame(results)
     res_df_class = res_df.groupby(by=['class']).mean()
@@ -244,6 +260,7 @@ if __name__ == "__main__":
 
     ################# create the model dir #################
     os.makedirs(os.path.join(clf.paths.out,"prediction"), exist_ok=True)
+    os.makedirs(os.path.join(clf.paths.out,"vis"), exist_ok=True)
     os.makedirs(os.path.join(clf.paths.out,"metrics"), exist_ok=True)
     os.makedirs(os.path.join(clf.paths.out,"models"), exist_ok=True)
     # save conf file to out

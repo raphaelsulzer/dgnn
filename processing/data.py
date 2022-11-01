@@ -215,10 +215,9 @@ class dataLoader:
 
         temp = np.load(self.basefilename+"_cgeom.npz")
         self.mean_edge = (temp["longest_edge"].sum() + temp["shortest_edge"].sum()) / (2*len(temp["longest_edge"]))
-
-        if('shape' in self.clf.features.node_features):
-            for key,value in temp.items():
-                self.features[key] = value
+        # if('shape' in self.clf.features.node_features):
+        for key,value in temp.items():
+            self.features[key] = value
 
 
         if('vertex' in self.clf.features.node_features):
@@ -275,6 +274,10 @@ class dataLoader:
         if(self.clf.regularization.cell_type):
             self.features.insert(0, "reg_"+self.clf.regularization.cell_type, self.features[self.clf.regularization.cell_type],allow_duplicates=False)
 
+        if(not 'shape' in self.clf.features.node_features):
+            self.features.drop(labels=['radius','vol','longest_edge','shortest_edge'],axis='columns',inplace=True)
+
+
         self.node_feature_names = list(self.features.columns.values)
 
 
@@ -286,6 +289,10 @@ class dataLoader:
 
 
     def readEdgeData(self):
+
+        # TODO: load _fgeom even if there is no 'shape' in edge_features and later remove it, to still have the
+        # possibility to do geometric regularization even without geometric feautres
+        # see readNodeData, there it is done already
 
         self.edge_features = pd.DataFrame()
         if('shape' in self.clf.features.edge_features):
