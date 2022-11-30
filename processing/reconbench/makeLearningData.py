@@ -129,7 +129,7 @@ def isosurface(args):
     command = [args.user_dir + args.reconbench_dir + "/isosurface",
                args.working_dir + "mpu/" + args.scene + ".mpu",
                str(args.resolution),
-               args.working_dir + "ground_truth_surface/" + args.scene + ".off"
+               args.working_dir + "ground_truth_surface/" + args.scene + "_light.off"
 
                ]
     print("Run command: ", command)
@@ -170,17 +170,17 @@ def scanMine(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='reconbench evaluation')
 
-    parser.add_argument('mode', type=str, default="scan",
+    parser.add_argument('--mode', type=str, default="isosurface",
                         help='what to do. '+'-separated list of choices=["implicit", "isosurface", "scan", "features"]')
-    parser.add_argument('--user_dir', type=str, default="/home/adminlocal/PhD/",
+    parser.add_argument('--user_dir', type=str, default="/home/raphael/",
                         help='the user folder, or PhD folder.')
     parser.add_argument('-d', '--data_dir', type=str, default="data/reconbench/",
                         help='working directory which should include the different scene folders.')
-    parser.add_argument('-s', '--scenes', nargs='+', type=str, default=["Ship"],
+    parser.add_argument('-s', '--scenes', nargs='+', type=str, default=["all"],
                         help='on which scene to execute pipeline.')
-    parser.add_argument('-c', '--confs', nargs='+', type=int, default=[0],
+    parser.add_argument('-c', '--confs', nargs='+', type=int, default=[-1],
                         help='which config file to load')
-    parser.add_argument('--resolution', type=int,default=512,
+    parser.add_argument('--resolution', type=int,default=128,
                         help="Isosurface resolution")
 
     parser.add_argument('--reconbench_dir', type=str, default="cpp/reconbench-CMake/build/release",
