@@ -26,7 +26,7 @@ Raphael Sulzer, Loic Landrieu, Renaud Marlet, Bruno Vallet<br />
 
 If you find our code or paper useful, please consider citing
 ```bibtex
-@article{2021,
+@article{sulzer2021dgnn,
    title={Scalable Surface Reconstruction with Delaunay‐Graph Neural Networks},
    volume={40},
    ISSN={1467-8659},
@@ -60,7 +60,8 @@ conda activate dgnn
 
 3. Compile the extension module `libmesh` (taken from [Convolutional Occupancy Networks](https://github.com/autonomousvision/convolutional_occupancy_networks) [1])
 ```bash
-python utils/setup_libmesh_convonet.py build_ext --inplace
+cd utils
+python setup_libmesh_convonet.py build_ext --inplace
 ```
 
 ## Surface mesh reconstruction using our pretrained models
