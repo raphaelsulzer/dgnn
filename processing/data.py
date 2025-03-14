@@ -200,7 +200,7 @@ class dataLoader:
         ####################################################
         ################### ground truth ###################
         ####################################################
-        temp = np.load(self.basefilename+"_labels.npz")
+        temp = np.load(self.basefilename + "_labels.npz")
         if(self.clf.inference.has_label):
             self.gt = torch.Tensor([temp["inside_perc"],temp["outside_perc"]]).type(torch.float)
             self.gt = torch.transpose(self.gt, 1, 0)
@@ -540,7 +540,7 @@ class dataLoader:
             print("Export predictions to: ", outpath)
 
         # export predictions
-        file = os.path.join(outpath,self.category,self.id+".npz")
+        file = os.path.join(outpath,self.id+".npz")
         f = open(file, 'wb')
         np.savez(f,
                  number_of_cells=int(len(prediction)),

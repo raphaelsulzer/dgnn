@@ -189,19 +189,22 @@ def inference(clf):
                 res["loss"] = clf.inference.metrics.cell_sum/clf.inference.metrics.weight_sum
             if("prediction" in clf.inference.export):
                 loader.exportScore(prediction)
-            mesh, eval_dict = gm.generate(data, prediction, clf)
-            time_dict["mesh"]+=eval_dict["time"]
-            for key, value in eval_dict.items():
-                res[key] = value
             t0 = time.time()
             if("mesh" in clf.inference.export):
+                mesh, eval_dict = gm.generate(data, prediction, clf)
                 # export one shape per class
                 outpath = os.path.join(clf.paths.out, clf.paths.generation, data["category"])
                 os.makedirs(outpath,exist_ok=True)
                 mesh.export(os.path.join(outpath, data["id"]+".ply"))
+
+                time_dict["mesh"] += eval_dict["time"]
+                for key, value in eval_dict.items():
+                    res[key] = value
+
             time_dict["export"]+=time.time()-t0
             results.append(res)
         except Exception as e:
+            print("\n")
             print(e)
             print("Skipping {}".format(clf.temp.inference_file))
 

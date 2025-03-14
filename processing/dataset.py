@@ -22,6 +22,9 @@ def getConfig(clf,mode):
     # path = os.path.join(clf.paths.data,mode.dataset)
     path = clf.paths.data
 
+    if not isinstance(mode.classes,list):
+        mode.classes = [mode.classes]
+
     if not mode.classes:
         if os.path.isfile(os.path.join(path,"classes.lst")):
             classfile = os.path.join(path,"classes.lst")
@@ -44,7 +47,7 @@ def getConfig(clf,mode):
 
 def getDataset(clf,dataset,mode):
 
-    if(dataset in ["ShapeNet","ModelNet10"]):
+    if(dataset in ["ShapeNet","ModelNet10","real"]):
 
         # TODO: this code should be simplified, because it is repeated for training, validation and inference mode
         if (mode == "training"):
